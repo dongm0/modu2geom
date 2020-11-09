@@ -13,6 +13,36 @@ public:
     ErrorCode GenerateOneCell(const OpenVolumeMesh::CellHandle &_ch);
 
 private:
+
+    //加入cell的一系列函数
+    ErrorCode AddOneCellCase0(const OpenVolumeMesh::CellHandle &_ch, 
+        const std::vector<OpenVolumeMesh::CellHandle> &_nbc_vec, 
+        const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec);
+
+    ErrorCode AddOneCellCase1(const OpenVolumeMesh::CellHandle &_ch, 
+        const std::vector<OpenVolumeMesh::CellHandle> &_nbc_vec, 
+        const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec);
+
+    ErrorCode AddOneCellCase2(const OpenVolumeMesh::CellHandle &_ch, 
+        const std::vector<OpenVolumeMesh::CellHandle> &_nbc_vec, 
+        const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec);
+
+    ErrorCode AddOneCellCase3(const OpenVolumeMesh::CellHandle &_ch, 
+        const std::vector<OpenVolumeMesh::CellHandle> &_nbc_vec, 
+        const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec);
+
+    ErrorCode AddOneCellCase4(const OpenVolumeMesh::CellHandle &_ch, 
+        const std::vector<OpenVolumeMesh::CellHandle> &_nbc_vec, 
+        const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec);
+
+    ErrorCode AddOneCellCase5(const OpenVolumeMesh::CellHandle &_ch, 
+        const std::vector<OpenVolumeMesh::CellHandle> &_nbc_vec, 
+        const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec);
+
+    ErrorCode AddOneCellCase6(const OpenVolumeMesh::CellHandle &_ch, 
+        const std::vector<OpenVolumeMesh::CellHandle> &_nbc_vec, 
+        const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec);
+
     OpenVolumeMesh::GeometricHexahedralMeshV3d m_mesh;
     OpenVolumeMesh::TopologicHexahedralMesh m_topomesh;
     std::vector<OpenVolumeMesh::VertexHandle> m_vertices;
@@ -20,4 +50,6 @@ private:
     std::vector<std::vector<uint8_t>> m_cells;
     std::map<OpenVolumeMesh::CellHandle, OpenVolumeMesh::CellHandle> m_m2tm_mapping;
     std::map<OpenVolumeMesh::CellHandle, OpenVolumeMesh::CellHandle> m_tm2m_mapping;
+    std::map<OpenVolumeMesh::VertexHandle, OpenVolumeMesh::VertexHandle> m_m2tm_v_mapping;
+    std::map<OpenVolumeMesh::VertexHandle, OpenVolumeMesh::VertexHandle> m_tm2m_v_mapping;
 };
