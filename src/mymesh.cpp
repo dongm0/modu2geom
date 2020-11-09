@@ -33,7 +33,7 @@ ErrorCode MyMesh::ReadTopoFromFile(const std::string &filename) {
         for (uint8_t j=0; j<8; ++j) {
             _cell.push_back(m_topo_vertices.at(m_cells.at(i).at(j)));
         }
-        uint8_t tmp = _cell[5];
+        auto tmp = _cell[5];
         _cell[5] = _cell[7];
         _cell[7] = tmp;
         #ifdef OVM_TOPOLOGY_CHECK
@@ -100,6 +100,25 @@ ErrorCode MyMesh::GenerateOneCell(const OpenVolumeMesh::CellHandle &_ch) {
 ErrorCode MyMesh::AddOneCellCase0(const OpenVolumeMesh::CellHandle &_ch, 
 const std::vector<OpenVolumeMesh::CellHandle> &_nbc_vec, 
 const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
+    auto bottomface = m_topomesh.xfront_halfface(_ch);
+    auto topface = m_topomesh.xback_halfface(_ch);
+    auto b_range = m_topomesh.halfface_vertices(bottomface);
+    auto t_range = m_topomesh.halfface_vertices(topface);
+    std::set<OpenVolumeMesh::VertexHandle> topset(t_range.first, t_range.second);
+    std::vector<OpenVolumeMesh::VertexHandle> bottomvec(b_range.first, b_range.second);
+    std::vector<OpenVolumeMesh::VertexHandle> topvec();
+
+    for (int i=0; i<4; ++i) {
+        auto bv = bottomvec[i];
+        for (auto vv_it=m_topomesh.vv_iter(bv); vv_it.valid(); ++vv_it) {
+            if (topset.find(*vv_it) != topset.end()) {
+                topvec.push_back(*vv_it);
+                break;
+            }
+        }
+    }
+
+    
     
 }
 ErrorCode MyMesh::AddOneCellCase1(const OpenVolumeMesh::CellHandle &_ch, 

@@ -43,6 +43,12 @@ private:
         const std::vector<OpenVolumeMesh::CellHandle> &_nbc_vec, 
         const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec);
 
+    //一系列操作函数，形式上简洁一些
+    OpenVolumeMesh::CellHandle getGeomC(const OpenVolumeMesh::CellHandle &_ch) {return m_tm2m_mapping[_ch];}
+    OpenVolumeMesh::CellHandle getTopoC(const OpenVolumeMesh::CellHandle &_ch) {return m_m2tm_mapping[_ch];}
+    OpenVolumeMesh::VertexHandle getTopoV(const OpenVolumeMesh::VertexHandle &_vh) {return m_m2tm_v_mapping[_vh];}
+    OpenVolumeMesh::VertexHandle getGeomV(const OpenVolumeMesh::VertexHandle &_vh) {return m_tm2m_v_mapping[_vh];}
+
     OpenVolumeMesh::GeometricHexahedralMeshV3d m_mesh;
     OpenVolumeMesh::TopologicHexahedralMesh m_topomesh;
     std::vector<OpenVolumeMesh::VertexHandle> m_vertices;
