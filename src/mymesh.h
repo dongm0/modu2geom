@@ -49,6 +49,24 @@ private:
     OpenVolumeMesh::VertexHandle getTopoV(const OpenVolumeMesh::VertexHandle &_vh) {return m_m2tm_v_mapping[_vh];}
     OpenVolumeMesh::VertexHandle getGeomV(const OpenVolumeMesh::VertexHandle &_vh) {return m_tm2m_v_mapping[_vh];}
 
+    std::vector<OpenVolumeMesh::VertexHandle> opposite_vertex_in_cell(const OpenVolumeMesh::HexahedralMeshTopologyKernel &mesh, 
+    const OpenVolumeMesh::CellHandle &cell, const OpenVolumeMesh::HalfFaceHandle &hf, 
+    const std::vector<OpenVolumeMesh::VertexHandle> &v) {
+        auto opposite_hf = mesh.opposite_halfface_handle_in_cell(hf, cell);
+        auto range_t = mesh.halfface_vertices(opposite_hf);
+        std::set<OpenVolumeMesh::VertexHandle> topset(range_t.first, range_t.second);
+        std::vector<OpenVolumeMesh::VertexHandle> res;
+        for (auto x : v) {
+            for (auto vv_it=mesh.vv_iter(x); vv_it.valid(); ++vv_it) {
+                if (topset.count(*vv_it)) {
+                    res.push_back(*vv_it);
+                    break;
+                }
+            }
+        }
+        return res;
+    }
+
     OpenVolumeMesh::GeometricHexahedralMeshV3d m_mesh;
     OpenVolumeMesh::TopologicHexahedralMesh m_topomesh;
     std::vector<OpenVolumeMesh::VertexHandle> m_vertices;
