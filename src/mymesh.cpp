@@ -224,7 +224,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     #endif
     std::vector<VertexHandle> fan1, fan2, fan3;
     VertexHandle jade;
-    //find common edge
+    //find bottom structure and center, jade is the undefined vertex
     {
         std::vector<VertexHandle> bf1(m_topomesh.halfface_vertices(_nbhf_vec[0]).first, m_topomesh.halfface_vertices(_nbhf_vec[0]).second);
         std::vector<VertexHandle> bf2(m_topomesh.halfface_vertices(_nbhf_vec[1]).first, m_topomesh.halfface_vertices(_nbhf_vec[1]).second);
@@ -253,7 +253,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
         }
         fan1 = {bf1[st1], bf1[(st1+1)%4], bf1[(st1+2)%4], bf1[(st1+3)%4]};
         fan2 = {bf2[st2], bf2[(st2+1)%4], bf2[(st2+2)%4], bf2[(st2+3)%4]};
-        fan3 = {bf3[st2], bf3[(st2+1)%4], bf3[(st2+2)%4], bf3[(st2+3)%4]};
+        fan3 = {bf3[st3], bf3[(st3+1)%4], bf3[(st3+2)%4], bf3[(st3+3)%4]};
         auto _top = opposite_vertex_in_cell(m_topomesh, _ch, _nbhf_vec[0], {fan1[2]});
         jade = _top[0];
     }
@@ -278,19 +278,198 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
 
     return ErrorCode::succeed;
 }
+
 ErrorCode MyMesh::AddOneCellCase4(const OpenVolumeMesh::CellHandle &_ch, 
 const std::vector<OpenVolumeMesh::CellHandle> &_nbc_vec, 
 const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
+    using namespace OpenVolumeMesh;
+    #ifndef NDEBUG
+        assert(_nbhf_vec.size()==3 && _nbc_vec.size()==3);
+    #endif
+    std::vector<VertexHandle> bottom_vec, wing1, wing2;
     
+    //find bottom structure
+    {
+        int num_b, num_w1, num_w2;
+        if (m_topomesh.opposite_halfface_handle_in_cell(_nbhf_vec[0], _ch) == _nbhf_vec[1]) {
+            num_b = 2, num_w1 = 0, num_w2 = 1;
+        }
+        else if (m_topomesh.opposite_halfface_handle_in_cell(_nbhf_vec[0], _ch) == _nbhf_vec[2]) {
+            num_b = 1, num_w1 = 0, num_w2 = 2;
+        }
+        else if (m_topomesh.opposite_halfface_handle_in_cell(_nbhf_vec[1], _ch) == _nbhf_vec[2]) {
+            num_b = 0, num_w1 = 1, num_w2 = 2;
+        }
+        else {
+            return ErrorCode::failed;
+        }
+        std::vector<VertexHandle> bf1(m_topomesh.halfface_vertices(_nbhf_vec[num_b]).first, m_topomesh.halfface_vertices(_nbhf_vec[num_b]).second);
+        std::vector<VertexHandle> bf2(m_topomesh.halfface_vertices(_nbhf_vec[num_w1]).first, m_topomesh.halfface_vertices(_nbhf_vec[num_w1]).second);
+        std::vector<VertexHandle> bf3(m_topomesh.halfface_vertices(_nbhf_vec[num_w2]).first, m_topomesh.halfface_vertices(_nbhf_vec[num_w2]).second);
+        std::set<VertexHandle> bf1_set(bf1.begin(), bf1.end());
+        std::set<VertexHandle> bf2_set(bf2.begin(), bf2.end());
+        std::set<VertexHandle> bf3_set(bf3.begin(), bf3.end());
+        int st1, st2, st3;
+        for (int i=0; i<4; ++i) {
+            if (bf2_set.count(bf1[i]) && bf2_set.count(bf1[(i+1)%4])) {
+                st1 = i;
+                break;
+            }
+        }
+        for (int i=0; i<4; ++i) {
+            if (bf1_set.count(bf2[i]) && bf1_set.count(bf2[(i+1)%4])) {
+                st2 = i;
+                break;
+            }
+        }
+        for (int i=0; i<4; ++i) {
+            if (bf1_set.count(bf3[i]) && bf1_set.count(bf3[(i+1)%4])) {
+                st3 = i;
+                break;
+            }
+        }
+        bottom_vec = {bf1[st1], bf1[(st1+1)%4], bf1[(st1+2)%4], bf1[(st1+3)%4]};
+        wing1 = {bf2[st2], bf2[(st2+1)%4], bf2[(st2+2)%4], bf2[(st2+3)%4]};
+        wing2 = {bf3[st3], bf3[(st3+1)%4], bf3[(st3+2)%4], bf3[(st3+3)%4]};
+    }
+    //deform
+
+    //end
+    std::vector<VertexHandle> cell_vertices{getGeomV(bottom_vec[0]), getGeomV(bottom_vec[1]), getGeomV(bottom_vec[2]), 
+    getGeomV(bottom_vec[3]), getGeomV(wing1[2]), getGeomV(wing2[3]), getGeomV(wing2[2]), getGeomV(wing1[1])};
+    auto _geomch = m_mesh.add_cell(cell_vertices);
+    m_tm2m_mapping[_ch] = _geomch;
+    m_m2tm_mapping[_geomch] = _ch;
+
+    return ErrorCode::succeed;
 }
 ErrorCode MyMesh::AddOneCellCase5(const OpenVolumeMesh::CellHandle &_ch, 
 const std::vector<OpenVolumeMesh::CellHandle> &_nbc_vec, 
 const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
+    using namespace OpenVolumeMesh;
+    #ifndef NDEBUG
+        assert(_nbhf_vec.size()==4 && _nbc_vec.size()==4);
+    #endif
+    std::vector<VertexHandle> wing1, wing2, side1, side2;
+    //find bottom structure
+    {
+        int num_w1, num_w2, num_s1, num_s2;
+        if (m_topomesh.opposite_halfface_handle_in_cell(_nbhf_vec[0], _ch) == _nbhf_vec[1]) {
+            num_w1 = 0, num_w2 = 1, num_s1 = 2, num_s2 = 3;
+        }
+        else if (m_topomesh.opposite_halfface_handle_in_cell(_nbhf_vec[0], _ch) == _nbhf_vec[2]) {
+            num_w1 = 0, num_w2 = 2, num_s1 = 1, num_s2 = 3;
+        }
+        else if (m_topomesh.opposite_halfface_handle_in_cell(_nbhf_vec[0], _ch) == _nbhf_vec[3]) {
+            num_w1 = 0, num_w2 = 3, num_s1 = 1, num_s2 = 2;
+        }
+        else if (m_topomesh.opposite_halfface_handle_in_cell(_nbhf_vec[1], _ch) == _nbhf_vec[2]) {
+            num_w1 = 1, num_w2 = 2, num_s1 = 0, num_s2 = 3;
+        }
+        else if (m_topomesh.opposite_halfface_handle_in_cell(_nbhf_vec[1], _ch) == _nbhf_vec[3]) {
+            num_w1 = 1, num_w2 = 3, num_s1 = 0, num_s2 = 2;
+        }
+        else if (m_topomesh.opposite_halfface_handle_in_cell(_nbhf_vec[2], _ch) == _nbhf_vec[3]) {
+            num_w1 = 2, num_w2 = 3, num_s1 = 0, num_s2 = 1;
+        }
+        std::vector<VertexHandle> bf1(m_topomesh.halfface_vertices(_nbhf_vec[num_w1]).first, m_topomesh.halfface_vertices(_nbhf_vec[num_w1]).second);
+        std::vector<VertexHandle> bf2(m_topomesh.halfface_vertices(_nbhf_vec[num_w2]).first, m_topomesh.halfface_vertices(_nbhf_vec[num_w2]).second);
+        std::vector<VertexHandle> sf1(m_topomesh.halfface_vertices(_nbhf_vec[num_s1]).first, m_topomesh.halfface_vertices(_nbhf_vec[num_s1]).second);
+        std::vector<VertexHandle> sf2(m_topomesh.halfface_vertices(_nbhf_vec[num_s2]).first, m_topomesh.halfface_vertices(_nbhf_vec[num_s2]).second);
+        std::set<VertexHandle> bf1_set(bf1.begin(), bf1.end());
+        std::set<VertexHandle> bf2_set(bf2.begin(), bf2.end());
+        int st1 = -1, st2 = -1, st3 = -1, st4 = -1;
+        for (int i=0; i<4; ++i) {
+            if (bf2_set.count(bf1[i]) && bf2_set.count(bf1[(i+1)%4])) {
+                st1 = i;
+                break;
+            }
+        }
+        for (int i=0; i<4; ++i) {
+            if (bf1_set.count(bf2[i]) && bf1_set.count(bf2[(i+1)%4])) {
+                st2 = i;
+                break;
+            }
+        }
+        for (int i=0; i<4; ++i) {
+            if (bf2_set.count(sf1[i]) && bf2_set.count(sf1[(i+1)%4]) && bf1_set.count(sf1[(i+2)%4])) {
+                sf1.swap(sf2);
+                break;
+            }
+        }
+        for (int i=0; i<4; ++i) {
+            if (sf1[i] == bf1[(st1+2)%4]) {
+                st3 = i;
+                break;
+            }
+        }
+        for (int i=0; i<4; ++i) {
+            if (sf2[i] == bf2[(st2+2)%4]) {
+                st4 = i;
+                break;
+            }
+        }
+        wing1 = {bf1[st1], bf1[(st1+1)%4], bf1[(st1+2)%4], bf1[(st1+3)%4]};
+        wing2 = {bf2[st2], bf2[(st2+1)%4], bf2[(st2+2)%4], bf2[(st2+3)%4]};
+        side1 = {sf1[st3], sf1[(st3+1)%4], sf1[(st3+2)%4], sf1[(st3+3)%4]};
+        side2 = {sf2[st4], sf2[(st4+1)%4], sf2[(st4+2)%4], sf2[(st4+3)%4]};
+    }
+    //deform
 
+    //end
+    std::vector<VertexHandle> cell_vertices{getGeomV(wing1[0]), getGeomV(wing1[1]), getGeomV(wing1[2]), 
+    getGeomV(wing1[3]), getGeomV(wing1[3]), getGeomV(wing2[2]), getGeomV(side2[3]), getGeomV(side1[3])};
+    auto _geomch = m_mesh.add_cell(cell_vertices);
+    m_tm2m_mapping[_ch] = _geomch;
+    m_m2tm_mapping[_geomch] = _ch;
+
+    return ErrorCode::succeed;
 }
 ErrorCode MyMesh::AddOneCellCase6(const OpenVolumeMesh::CellHandle &_ch, 
 const std::vector<OpenVolumeMesh::CellHandle> &_nbc_vec, 
 const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
+    using namespace OpenVolumeMesh;
+    #ifndef NDEBUG
+        assert(_nbhf_vec.size()==5 && _nbc_vec.size()==5);
+    #endif
+    std::vector<VertexHandle> bottom_vec;
+    std::vector<std::vector<VertexHandle>> wings;
+    //find bottom structure
+    {
+        HalfFaceHandle bottom_hf;
+        std::set<HalfFaceHandle> _nbhf_set(_nbhf_vec.begin(), _nbhf_vec.end());
+        for (const auto &x : _nbhf_vec) {
+            if (_nbhf_set.count(m_topomesh.opposite_halfface_handle_in_cell(x, _ch))==0) {
+                bottom_vec.assign(m_topomesh.halfface_vertices(x).first, m_topomesh.halfface_vertices(x).second);
+                bottom_hf = x;
+            }
+        }
+        auto hes = m_topomesh.halfface(bottom_hf).halfedges();
+        auto b_range = m_topomesh.halfface_vertices(bottom_hf);
+        std::vector<VertexHandle> vs(b_range.first, b_range.second); 
+        for (int i=0; i<4; ++i) {
+            auto _wing_hf = m_topomesh.adjacent_halfface_in_cell(bottom_hf, hes[i]);
+            int st = -1;
+            auto s_range = m_topomesh.halfface_vertices(_wing_hf);
+            std::vector<VertexHandle> _side_vs(s_range.first, s_range.second);
+            for (int j=0; j<4; ++j) {
+                if (_side_vs[j] == vs[(i+1)%4]) {
+                    st = j;
+                    break;
+                }
+            }
+            wings.push_back({_side_vs[st], _side_vs[(st+1)%4], _side_vs[(st+2)%4], _side_vs[(st+3)%4]});
+        }
+    }
+    //deform
 
+    //end
+    std::vector<VertexHandle> cell_vertices{getGeomV(bottom_vec[0]), getGeomV(bottom_vec[1]), getGeomV(bottom_vec[2]), 
+    getGeomV(bottom_vec[3]), getGeomV(wings[0][2]), getGeomV(wings[3][2]), getGeomV(wings[2][2]), getGeomV(wings[1][2])};
+    auto _geomch = m_mesh.add_cell(cell_vertices);
+    m_tm2m_mapping[_ch] = _geomch;
+    m_m2tm_mapping[_geomch] = _ch;
+
+    return ErrorCode::succeed;
 }
 

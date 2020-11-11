@@ -1,0 +1,90 @@
+##############################################################################
+#
+# Make variables for use by Trilinos clients. 
+#
+# Do not edit: This file was generated automatically by CMake.
+#
+##############################################################################
+
+
+## ---------------------------------------------------------------------------
+## Compilers used by Trilinos build
+## ---------------------------------------------------------------------------
+
+Trilinos_CXX_COMPILER=/usr/bin/c++
+
+Trilinos_C_COMPILER=/usr/bin/cc
+
+Trilinos_Fortran_COMPILER=/usr/bin/gfortran
+
+
+## ---------------------------------------------------------------------------
+## Compiler flags used by Trilinos build
+## ---------------------------------------------------------------------------
+
+Trilinos_CXX_COMPILER_FLAGS= -std=c++11 -O3 -DNDEBUG
+
+Trilinos_C_COMPILER_FLAGS= -O3 -DNDEBUG
+
+Trilinos_Fortran_COMPILER_FLAGS= -O3
+
+## Extra link flags (e.g., specification of fortran libraries)
+Trilinos_EXTRA_LD_FLAGS=
+
+## This is the command-line entry used for setting rpaths. In a build
+## with static libraries it will be empty. 
+Trilinos_SHARED_LIB_RPATH_COMMAND=-Wl,-rpath,/home/dm/workspace/mesquite_install/lib
+Trilinos_BUILD_SHARED_LIBS=ON
+
+Trilinos_LINKER=/usr/bin/ld
+Trilinos_AR=/usr/bin/ar
+
+
+## ---------------------------------------------------------------------------
+## Set library specifications and paths 
+## ---------------------------------------------------------------------------
+
+## The project version number
+Trilinos_VERSION=12.12.1
+
+## The project include file directories.
+Trilinos_INCLUDE_DIRS= -I/home/dm/workspace/mesquite_install/include
+
+## The project library directories.
+Trilinos_LIBRARY_DIRS= -L/home/dm/workspace/mesquite_install/lib
+
+## The project libraries.
+Trilinos_LIBRARIES= -lmsqutil -lmesquite
+
+## The project tpl include paths
+Trilinos_TPL_INCLUDE_DIRS= -I/usr/include
+
+## The project tpl library paths
+Trilinos_TPL_LIBRARY_DIRS=
+
+## The project tpl libraries
+Trilinos_TPL_LIBRARIES= /usr/lib/libdl.so /usr/lib/libpthread.so
+
+## ---------------------------------------------------------------------------
+## MPI specific variables
+##   These variables are provided to make it easier to get the mpi libraries
+##   and includes on systems that do not use the mpi wrappers for compiling
+## ---------------------------------------------------------------------------
+
+Trilinos_MPI_LIBRARIES=
+Trilinos_MPI_LIBRARY_DIRS=
+Trilinos_MPI_INCLUDE_DIRS=
+Trilinos_MPI_EXEC=
+Trilinos_MPI_EXEC_MAX_NUMPROCS=
+Trilinos_MPI_EXEC_NUMPROCS_FLAG=
+
+## ---------------------------------------------------------------------------
+## Set useful general variables 
+## ---------------------------------------------------------------------------
+
+## The packages enabled for this project
+Trilinos_PACKAGE_LIST= Mesquite
+
+## The TPLs enabled for this project
+Trilinos_TPL_LIST= DLlib Pthread
+
