@@ -12,6 +12,8 @@ public:
     ErrorCode GenerateOrder(std::vector<uint8_t> &_order);
     ErrorCode GenerateOneCell(const OpenVolumeMesh::CellHandle &_ch);
 
+    ErrorCode Optimize();
+
 private:
 
     //加入cell的一系列函数

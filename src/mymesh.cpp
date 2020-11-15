@@ -1,4 +1,11 @@
 #include "mymesh.h"
+#include <Mesquite/Mesquite_ArrayMesh.hpp>
+#include <Mesquite_IdealShapeTarget.hpp>
+#include <Mesquite_TMetric.hpp>
+#include <Mesquite_TQualityMetric.hpp>
+#include <Mesquite_ElementPMeanP.hpp>
+#include <Mesquite_InstructionQueue.hpp>
+#include <Mesquite_ConjugateGradient.hpp>
 
 ErrorCode MyMesh::ReadTopoFromFile(const std::string &filename) {
     using namespace OpenVolumeMesh;
@@ -473,3 +480,39 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     return ErrorCode::succeed;
 }
 
+ErrorCode MyMesh::Optimize() {
+    using namespace Mesquite;
+    std::vector<double> coords;
+    for (auto v_it = m_mesh.vertices_begin(); v_it!=m_mesh.vertices_end(); ++v_it) {
+        auto c = m_mesh.vertex(*v_it);
+        coords.push_back(c[0]);
+        coords.push_back(c[1]);
+        coords.push_back(c[2]);
+    }
+    std::vector<int> fixedflag;
+    std::vector<int> connection;
+
+    ArrayMesh msqmesh(3, m_mesh.n_vertices(), coords.data(), fixedflag.data(), m_mesh.n_cells(), HEXAHEDRON, connection.data());
+    MsqError err;
+    
+    IdealShapeTarget target;
+    //TShapeSizeB1 m1;
+    TShapeSizeB3 m2;
+    //TSum mymetric(&m1, &m2);
+    TQualityMetric metric_0(&target, &m2);
+    ElementPMeanP metric(1.0, &metric_0);
+    PMeanPTemplate obj_func_opt(1.0, &metric);
+    ConjugateGradient improver(&obj_func_opt);;
+    improver.use_global_patch();
+    //improver.set_inner_termination_criterion(&e);
+    InstructionQueue queue;
+    queue.set_master_quality_improver(&improver, err);
+    queue.run_instructions(&msqmesh, err);
+
+    int i = 0;
+    for (auto v_it = m_mesh.vertices_begin(); v_it!=m_mesh.vertices_end(); ++v_it) {
+        m_mesh.set_vertex(*v_it, OpenVolumeMesh::Geometry::Vec3d(coords[i*3], coords[i*3+1], coords[i*3+2]));
+    }
+
+    return ErrorCode::succeed;
+}
