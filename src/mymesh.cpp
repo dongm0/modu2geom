@@ -201,7 +201,12 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
         s1 = _top[0], s2 = _top[1];
     }
     //deform
-
+    {
+        //求外向法向方向
+        {
+            
+        }
+    }
     //end
     VertexHandle p0 = getGeomV(wing1[0]), p1 = getGeomV(wing1[3]), p2 = getGeomV(wing2[2]);
     VertexHandle p3 = getGeomV(wing2[0]), p4 = getGeomV(wing2[3]), p5 = getGeomV(wing1[2]);
