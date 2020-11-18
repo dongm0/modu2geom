@@ -4,6 +4,14 @@
 #include <OpenVolumeMesh/Geometry/VectorT.hh>
 #include "utils.h"
 
+struct untangleData {
+    OpenVolumeMesh::Geometry::Vec3d norm_d;
+    OpenVolumeMesh::Geometry::Vec3d face_d;
+    OpenVolumeMesh::Geometry::Vec3d bline_d;
+    OpenVolumeMesh::Geometry::Vec3d assistV_d;
+    std::vector<OpenVolumeMesh::Geometry::Vec3d> vertices;
+};
+
 class MyMesh {
 public:
 
@@ -50,6 +58,14 @@ private:
     OpenVolumeMesh::CellHandle getTopoC(const OpenVolumeMesh::CellHandle &_ch) {return m_m2tm_mapping[_ch];}
     OpenVolumeMesh::VertexHandle getTopoV(const OpenVolumeMesh::VertexHandle &_vh) {return m_m2tm_v_mapping[_vh];}
     OpenVolumeMesh::VertexHandle getGeomV(const OpenVolumeMesh::VertexHandle &_vh) {return m_tm2m_v_mapping[_vh];}
+    OpenVolumeMesh::Geometry::Vec3d getCoord_topo(const OpenVolumeMesh::VertexHandle &_vh) {
+        auto _geomv = getGeomV(_vh);
+        return m_mesh.vertex(_geomv);
+    }
+    void setCoord_topo(const OpenVolumeMesh::VertexHandle &_vh, const OpenVolumeMesh::Geometry::Vec3d _vec) {
+        auto _geomv = getGeomV(_vh);
+        m_mesh.set_vertex(_geomv, _vec);
+    }
 
     std::vector<OpenVolumeMesh::VertexHandle> opposite_vertex_in_cell(const OpenVolumeMesh::HexahedralMeshTopologyKernel &mesh, 
     const OpenVolumeMesh::CellHandle &cell, const OpenVolumeMesh::HalfFaceHandle &hf, 
@@ -69,6 +85,10 @@ private:
         return res;
     }
 
+    std::vector<std::vector<OpenVolumeMesh::Vec3d>> untangleBottomFace(const std::vector<untangleData> &uData);
+
+private:
+    //私有变量
     OpenVolumeMesh::GeometricHexahedralMeshV3d m_mesh;
     OpenVolumeMesh::TopologicHexahedralMesh m_topomesh;
     std::vector<OpenVolumeMesh::VertexHandle> m_vertices;

@@ -203,8 +203,34 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     //deform
     {
         //求外向法向方向
+        Vec3d normdir, wing1dir, wing2dir, bottoml;//估计的法向量，以及两边正交的方向，bottoml是两个底面交线的方向
         {
-            
+            VertexHandle wbv1 = opposite_vertex_in_cell(m_topomesh, _nbc_vec[0], 
+                                m_topomesh.opposite_halfface_handle(_nbhf_vec[0]), {wing1[0]})[0];
+            VertexHandle wbv2 = opposite_vertex_in_cell(m_topomesh, _nbc_vec[0], 
+                                m_topomesh.opposite_halfface_handle(_nbhf_vec[0]), {wing1[1]})[0];
+            VertexHandle wbv3 = opposite_vertex_in_cell(m_topomesh, _nbc_vec[1], 
+                                m_topomesh.opposite_halfface_handle(_nbhf_vec[1]), {wing2[0]})[0];
+            VertexHandle wbv4 = opposite_vertex_in_cell(m_topomesh, _nbc_vec[1], 
+                                m_topomesh.opposite_halfface_handle(_nbhf_vec[1]), {wing2[1]})[0];
+            normdir = (getCoord_topo(wing1[0])-getCoord_topo(wbv1)+getCoord_topo(wing1[1])-getCoord_topo(wbv2)).normalize_cond() +
+                            (getCoord_topo(wing2[0])-getCoord_topo(wbv3)+getCoord_topo(wing2[1])-getCoord_topo(wbv4)).normalize_cond();
+            bottoml = getCoord_topo(wing1[0]) - getCoord_topo(wing1[1]);
+            //project
+            normdir = normdir + (-1*(bottoml|normdir)/bottoml.length())*bottoml;
+            wing1dir = (normdir|bottoml)*bottoml + bottoml%normdir;
+            wing2dir = -1*wing1dir;
+        }
+        //wing的位置调节
+        {
+            std::vector<untangleData> uData(2);
+            uData[0] = {normdir, wing1dir, bottoml, getCoord_topo(wing1[0]), {getCoord_topo(wing1[2]), getCoord_topo(wing1[3])}};
+            uData[1] = {normdir, wing2dir, -1*bottoml, getCoord_topo(wing2[0]), {getCoord_topo(wing2[2]), getCoord_topo(wing2[3])}};
+            auto new_pos = untangleBottomFace(uData);
+            setCoord_topo(wing1[2], new_pos[0][0]);
+            setCoord_topo(wing1[3], new_pos[0][1]);
+            setCoord_topo(wing2[2], new_pos[1][0]);
+            setCoord_topo(wing2[3], new_pos[1][1]);
         }
     }
     //end
@@ -224,6 +250,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     auto _geomch = m_mesh.add_cell(cell_vertices);
     m_tm2m_mapping[_ch] = _geomch;
     m_m2tm_mapping[_geomch] = _ch;
+
 
     return ErrorCode::succeed;
 }
@@ -485,6 +512,43 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     return ErrorCode::succeed;
 }
 
+std::vector<std::vector<OpenVolumeMesh::Vec3d>> MyMesh::untangleBottomFace(const std::vector<untangleData> &uData) {
+    using namespace OpenVolumeMesh;
+    const double my_pi = atan(1)*4;
+    
+    //可以考虑都单位化
+    int fsize = uData.size();
+    std::vector<std::vector<Vec3d>> _res;
+    for (int i=0; i<fsize; ++i) {
+        std::vector<Vec3d> _res1c;
+        for (int j=0; j<uData[i].vertices.size(); ++i) {
+            Vec3d corner = uData.at(i).vertices.at(j) - uData.at(i).assistV_d;
+            corner = corner - ((corner|uData.at(i).bline_d)/uData.at(i).bline_d.length())*uData.at(i).bline_d;
+            Vec3d base = uData.at(i).vertices.at(j) - corner;
+
+            double alpha = acos((corner|uData.at(i).face_d)/(corner.length()*uData.at(i).face_d.length()));
+            if ((corner|uData.at(i).norm_d) < 0) alpha = 2*my_pi - alpha;
+            
+            if (alpha < (my_pi/6) or alpha > (5*my_pi/4)) {
+                double theta = my_pi/6 - alpha;
+                if (theta < 0) theta += 2*my_pi;
+                corner = cos(theta)*corner + (1-cos(theta))*(corner|uData.at(i).bline_d)*uData.at(i).bline_d - 
+                         sin(theta)*uData.at(i).bline_d*corner;
+            }
+            else if (alpha>(my_pi/3) and alpha<=(5*my_pi/4)) {
+                double theta = alpha - my_pi/3;
+                corner = cos(theta)*corner + (1-cos(theta))*(corner|uData.at(i).bline_d)*uData.at(i).bline_d + 
+                         sin(theta)*uData.at(i).bline_d*corner;
+            }
+
+            _res1c.push_back(base + corner);
+        }
+        _res.push_back(_res1c);
+    }
+    return _res;
+}
+
+/*
 ErrorCode MyMesh::Optimize() {
     using namespace Mesquite;
     std::vector<double> coords;
@@ -521,3 +585,4 @@ ErrorCode MyMesh::Optimize() {
 
     return ErrorCode::succeed;
 }
+*/
