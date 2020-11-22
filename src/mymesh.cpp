@@ -217,7 +217,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
                             (getCoord_topo(wing2[0])-getCoord_topo(wbv3)+getCoord_topo(wing2[1])-getCoord_topo(wbv4)).normalize_cond();
             bottoml = getCoord_topo(wing1[0]) - getCoord_topo(wing1[1]);
             //project
-            normdir = normdir + (-1*(bottoml|normdir)/bottoml.length())*bottoml;
+            normdir = normdir - ((bottoml|normdir)/bottoml.length())*(bottoml/bottoml.length());
             wing1dir = (normdir|bottoml)*bottoml + bottoml%normdir;
             wing2dir = -1*wing1dir;
         }
@@ -297,6 +297,43 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
         jade = _top[0];
     }
     //deform
+    {
+        Vec3d normdir, fan1dir, fan2dir, fan3dir, bottoml1, bottoml2, bottoml3;//估计的法向量，以及两边正交的方向，bottoml是两个底面交线的方向
+        {
+            VertexHandle wbv1 = opposite_vertex_in_cell(m_topomesh, _nbc_vec[0], 
+                                m_topomesh.opposite_halfface_handle(_nbhf_vec[0]), {fan1[0]})[0];
+            VertexHandle wbv2 = opposite_vertex_in_cell(m_topomesh, _nbc_vec[1], 
+                                m_topomesh.opposite_halfface_handle(_nbhf_vec[1]), {fan2[0]})[0];
+            VertexHandle wbv3 = opposite_vertex_in_cell(m_topomesh, _nbc_vec[2], 
+                                m_topomesh.opposite_halfface_handle(_nbhf_vec[2]), {fan3[0]})[0];
+            normdir = (getCoord_topo(fan1[0])-getCoord_topo(wbv1)).normalize_cond() +
+                      (getCoord_topo(fan2[0])-getCoord_topo(wbv2)).normalize_cond() + 
+                      (getCoord_topo(fan3[0])-getCoord_topo(wbv3)).normalize_cond();
+
+            Vec3d tmp = getCoord_topo(fan1[2]) - getCoord_topo(fan1[0]);
+            fan1dir = tmp - ((tmp|normdir)/normdir.length())*(normdir/normdir.length());
+            bottoml1 = normdir%fan1dir;
+            tmp = getCoord_topo(fan2[2]) - getCoord_topo(fan1[0]);
+            fan2dir = tmp - ((tmp|normdir)/normdir.length())*(normdir/normdir.length());
+            bottoml2 = normdir%fan2dir;
+            tmp = getCoord_topo(fan3[2]) - getCoord_topo(fan1[0]);
+            fan3dir = tmp - ((tmp|normdir)/normdir.length())*(normdir/normdir.length());
+            bottoml3 = normdir%fan3dir;
+        }
+        {
+            std::vector<untangleData> uData(3);
+            uData[0] = {normdir, fan1dir, bottoml1, getCoord_topo(fan1[0]), {getCoord_topo(fan1[2]), getCoord_topo(fan1[3])}};
+            uData[1] = {normdir, fan2dir, bottoml2, getCoord_topo(fan2[0]), {getCoord_topo(fan2[2]), getCoord_topo(fan2[3])}};
+            uData[2] = {normdir, fan3dir, bottoml3, getCoord_topo(fan3[0]), {getCoord_topo(fan3[2]), getCoord_topo(fan3[3])}};
+            auto new_pos = untangleBottomFace(uData);
+            setCoord_topo(fan1[2], new_pos[0][0]);
+            setCoord_topo(fan1[3], new_pos[0][1]);
+            setCoord_topo(fan2[2], new_pos[1][0]);
+            setCoord_topo(fan2[3], new_pos[1][1]);
+            setCoord_topo(fan3[2], new_pos[2][0]);
+            setCoord_topo(fan3[3], new_pos[2][1]);
+        }
+    }
 
     //end
     VertexHandle p10 = getGeomV(fan1[2]), p11 = getGeomV(fan1[1]), p12 = getGeomV(fan1[3]);
@@ -372,6 +409,31 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
         wing2 = {bf3[st3], bf3[(st3+1)%4], bf3[(st3+2)%4], bf3[(st3+3)%4]};
     }
     //deform
+    
+    {
+        Vec3d normdir, wing1dir, wing2dir, bottoml1, bottoml2;//估计的法向量，以及两边正交的方向
+        {
+            Vec3d v1 = getCoord_topo(bottom_vec[1]) - getCoord_topo(bottom_vec[0]);
+            Vec3d v2 = getCoord_topo(bottom_vec[2]) - getCoord_topo(bottom_vec[1]);
+            Vec3d v3 = getCoord_topo(bottom_vec[3]) - getCoord_topo(bottom_vec[2]);
+            Vec3d v4 = getCoord_topo(bottom_vec[0]) - getCoord_topo(bottom_vec[3]);
+            normdir = v1%v2 + v2%v3 + v3%v4 + v4%v1;
+
+            bottoml1 = v1, bottoml2 = v3;
+            wing1dir = bottoml1%normdir, wing2dir = bottoml2%normdir;
+        }
+        {
+            std::vector<untangleData> uData(2);
+            uData[0] = {normdir, wing1dir, bottoml1, getCoord_topo(wing1[0]), {getCoord_topo(wing1[2]), getCoord_topo(wing1[3])}};
+            uData[1] = {normdir, wing2dir, bottoml2, getCoord_topo(wing2[0]), {getCoord_topo(wing2[2]), getCoord_topo(wing2[3])}};
+            //uData[2] = {normdir, fan3dir, bottoml3, getCoord_topo(fan3[0]), {getCoord_topo(fan3[2]), getCoord_topo(fan3[3])}};
+            auto new_pos = untangleBottomFace(uData);
+            setCoord_topo(wing1[2], new_pos[0][0]);
+            setCoord_topo(wing1[3], new_pos[0][1]);
+            setCoord_topo(wing2[2], new_pos[1][0]);
+            setCoord_topo(wing2[3], new_pos[1][1]);
+        }
+    }
 
     //end
     std::vector<VertexHandle> cell_vertices{getGeomV(bottom_vec[0]), getGeomV(bottom_vec[1]), getGeomV(bottom_vec[2]), 
@@ -389,30 +451,31 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     #ifndef NDEBUG
         assert(_nbhf_vec.size()==4 && _nbc_vec.size()==4);
     #endif
-    std::vector<VertexHandle> wing1, wing2, side1, side2;
+    std::vector<VertexHandle> side1, side2, bottom1, bottom2;//两个wing是opposite的
+    int num_s1, num_s2, num_b1, num_b2;
     //find bottom structure
     {
-        int num_w1, num_w2, num_s1, num_s2;
+        //这里曾经校正过一遍，可能会出问题，测试的时候多检查
         if (m_topomesh.opposite_halfface_handle_in_cell(_nbhf_vec[0], _ch) == _nbhf_vec[1]) {
-            num_w1 = 0, num_w2 = 1, num_s1 = 2, num_s2 = 3;
+            num_s1 = 0, num_s2 = 1, num_b1 = 2, num_b2 = 3;
         }
         else if (m_topomesh.opposite_halfface_handle_in_cell(_nbhf_vec[0], _ch) == _nbhf_vec[2]) {
-            num_w1 = 0, num_w2 = 2, num_s1 = 1, num_s2 = 3;
+            num_s1 = 0, num_s2 = 2, num_b1 = 1, num_b2 = 3;
         }
         else if (m_topomesh.opposite_halfface_handle_in_cell(_nbhf_vec[0], _ch) == _nbhf_vec[3]) {
-            num_w1 = 0, num_w2 = 3, num_s1 = 1, num_s2 = 2;
+            num_s1 = 0, num_s2 = 3, num_b1 = 1, num_b2 = 2;
         }
         else if (m_topomesh.opposite_halfface_handle_in_cell(_nbhf_vec[1], _ch) == _nbhf_vec[2]) {
-            num_w1 = 1, num_w2 = 2, num_s1 = 0, num_s2 = 3;
+            num_s1 = 1, num_s2 = 2, num_b1 = 0, num_b2 = 3;
         }
         else if (m_topomesh.opposite_halfface_handle_in_cell(_nbhf_vec[1], _ch) == _nbhf_vec[3]) {
-            num_w1 = 1, num_w2 = 3, num_s1 = 0, num_s2 = 2;
+            num_s1 = 1, num_s2 = 3, num_b1 = 0, num_b2 = 2;
         }
         else if (m_topomesh.opposite_halfface_handle_in_cell(_nbhf_vec[2], _ch) == _nbhf_vec[3]) {
-            num_w1 = 2, num_w2 = 3, num_s1 = 0, num_s2 = 1;
+            num_s1 = 2, num_s2 = 3, num_b1 = 0, num_b2 = 1;
         }
-        std::vector<VertexHandle> bf1(m_topomesh.halfface_vertices(_nbhf_vec[num_w1]).first, m_topomesh.halfface_vertices(_nbhf_vec[num_w1]).second);
-        std::vector<VertexHandle> bf2(m_topomesh.halfface_vertices(_nbhf_vec[num_w2]).first, m_topomesh.halfface_vertices(_nbhf_vec[num_w2]).second);
+        std::vector<VertexHandle> bf1(m_topomesh.halfface_vertices(_nbhf_vec[num_b1]).first, m_topomesh.halfface_vertices(_nbhf_vec[num_b1]).second);
+        std::vector<VertexHandle> bf2(m_topomesh.halfface_vertices(_nbhf_vec[num_b2]).first, m_topomesh.halfface_vertices(_nbhf_vec[num_b2]).second);
         std::vector<VertexHandle> sf1(m_topomesh.halfface_vertices(_nbhf_vec[num_s1]).first, m_topomesh.halfface_vertices(_nbhf_vec[num_s1]).second);
         std::vector<VertexHandle> sf2(m_topomesh.halfface_vertices(_nbhf_vec[num_s2]).first, m_topomesh.halfface_vertices(_nbhf_vec[num_s2]).second);
         std::set<VertexHandle> bf1_set(bf1.begin(), bf1.end());
@@ -448,16 +511,50 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
                 break;
             }
         }
-        wing1 = {bf1[st1], bf1[(st1+1)%4], bf1[(st1+2)%4], bf1[(st1+3)%4]};
-        wing2 = {bf2[st2], bf2[(st2+1)%4], bf2[(st2+2)%4], bf2[(st2+3)%4]};
+        bottom1 = {bf1[st1], bf1[(st1+1)%4], bf1[(st1+2)%4], bf1[(st1+3)%4]};
+        bottom2 = {bf2[st2], bf2[(st2+1)%4], bf2[(st2+2)%4], bf2[(st2+3)%4]};
         side1 = {sf1[st3], sf1[(st3+1)%4], sf1[(st3+2)%4], sf1[(st3+3)%4]};
         side2 = {sf2[st4], sf2[(st4+1)%4], sf2[(st4+2)%4], sf2[(st4+3)%4]};
     }
     //deform
-
+    {
+        Vec3d normdir, bottom1dir, bottom2dir, side1dir, side2dir, bottoml, side1bdir, side2bdir;//估计的法向量，以及两边正交的方向，bottoml是两个底面交线的方向
+        {
+            VertexHandle wbv1 = opposite_vertex_in_cell(m_topomesh, _nbc_vec[num_b1], 
+                                m_topomesh.opposite_halfface_handle(_nbhf_vec[num_b1]), {bottom1[0]})[0];
+            VertexHandle wbv2 = opposite_vertex_in_cell(m_topomesh, _nbc_vec[num_b1], 
+                                m_topomesh.opposite_halfface_handle(_nbhf_vec[num_b1]), {bottom1[1]})[0];
+            VertexHandle wbv3 = opposite_vertex_in_cell(m_topomesh, _nbc_vec[num_b2], 
+                                m_topomesh.opposite_halfface_handle(_nbhf_vec[num_b2]), {bottom2[0]})[0];
+            VertexHandle wbv4 = opposite_vertex_in_cell(m_topomesh, _nbc_vec[num_b2], 
+                                m_topomesh.opposite_halfface_handle(_nbhf_vec[num_b2]), {bottom2[1]})[0];
+            normdir = (getCoord_topo(bottom1[0])-getCoord_topo(wbv1)+getCoord_topo(bottom1[1])-getCoord_topo(wbv2)).normalize_cond() +
+                            (getCoord_topo(bottom2[0])-getCoord_topo(wbv3)+getCoord_topo(bottom2[1])-getCoord_topo(wbv4)).normalize_cond();
+            bottoml = getCoord_topo(bottom1[0]) - getCoord_topo(bottom1[1]);
+            //project
+            normdir = normdir - ((bottoml|normdir)/bottoml.length())*(bottoml/bottoml.length());
+            bottom1dir = bottoml%normdir;
+            bottom2dir = -1*bottom1dir;
+            side1dir = -bottoml, side2dir = bottoml;
+            side1bdir = normdir%side1dir, side2bdir = normdir%side2bdir;
+        }
+        //wing的位置调节
+        {
+            std::vector<untangleData> uData(2);
+            uData[0] = {normdir, side1dir, side1bdir, getCoord_topo(side1[1]), {getCoord_topo(side1[2]), getCoord_topo(side1[3]), getCoord_topo(side1[0])}};
+            uData[1] = {normdir, side2dir, side2bdir, getCoord_topo(side2[1]), {getCoord_topo(side2[2]), getCoord_topo(side2[3]), getCoord_topo(side2[0])}};
+            auto new_pos = untangleBottomFace(uData);
+            setCoord_topo(side1[2], new_pos[0][0]);
+            setCoord_topo(side1[3], new_pos[0][1]);
+            setCoord_topo(side1[0], new_pos[0][2]);
+            setCoord_topo(side2[2], new_pos[1][0]);
+            setCoord_topo(side2[3], new_pos[1][1]);
+            setCoord_topo(side2[0], new_pos[1][2]);
+        }
+    }
     //end
-    std::vector<VertexHandle> cell_vertices{getGeomV(wing1[0]), getGeomV(wing1[1]), getGeomV(wing1[2]), 
-    getGeomV(wing1[3]), getGeomV(wing1[3]), getGeomV(wing2[2]), getGeomV(side2[3]), getGeomV(side1[3])};
+    std::vector<VertexHandle> cell_vertices{getGeomV(bottom1[0]), getGeomV(bottom1[1]), getGeomV(bottom1[2]), 
+    getGeomV(bottom1[3]), getGeomV(bottom2[2]), getGeomV(side2[3]), getGeomV(side1[3]), getGeomV(side1[2])};
     auto _geomch = m_mesh.add_cell(cell_vertices);
     m_tm2m_mapping[_ch] = _geomch;
     m_m2tm_mapping[_geomch] = _ch;
@@ -501,6 +598,30 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
         }
     }
     //deform
+    {
+        Vec3d normdir, wingdir[4], bottoml[4];//估计的法向量，以及两边正交的方向，bottoml是两个底面交线的方向
+        {
+            Vec3d v1 = getCoord_topo(bottom_vec[1]) - getCoord_topo(bottom_vec[0]);
+            Vec3d v2 = getCoord_topo(bottom_vec[2]) - getCoord_topo(bottom_vec[1]);
+            Vec3d v3 = getCoord_topo(bottom_vec[3]) - getCoord_topo(bottom_vec[2]);
+            Vec3d v4 = getCoord_topo(bottom_vec[0]) - getCoord_topo(bottom_vec[3]);
+            normdir = v1%v2 + v2%v3 + v3%v4 + v4%v1;
+
+            bottoml[0] = v1, bottoml[1] = v2, bottoml[2] = v3, bottoml[3] = v4;
+            wingdir[0] = bottoml[0]%normdir, wingdir[1] = bottoml[1]%normdir, wingdir[2] = bottoml[2]%normdir, wingdir[3] = bottoml[3]%normdir;
+        }
+        //wing的位置调节
+        {
+            std::vector<untangleData> uData(2);
+            uData[0] = {normdir, wingdir[0], bottoml[0], getCoord_topo(wings[0][0]), {getCoord_topo(wings[0][2]), getCoord_topo(wings[0][3])}};
+            uData[1] = {normdir, wingdir[2], bottoml[2], getCoord_topo(wings[2][0]), {getCoord_topo(wings[2][2]), getCoord_topo(wings[2][3])}};
+            auto new_pos = untangleBottomFace(uData);
+            setCoord_topo(wings[0][2], new_pos[0][0]);
+            setCoord_topo(wings[0][3], new_pos[0][1]);
+            setCoord_topo(wings[2][2], new_pos[1][0]);
+            setCoord_topo(wings[2][3], new_pos[1][1]);
+        }
+    }
 
     //end
     std::vector<VertexHandle> cell_vertices{getGeomV(bottom_vec[0]), getGeomV(bottom_vec[1]), getGeomV(bottom_vec[2]), 
@@ -523,7 +644,7 @@ std::vector<std::vector<OpenVolumeMesh::Vec3d>> MyMesh::untangleBottomFace(const
         std::vector<Vec3d> _res1c;
         for (int j=0; j<uData[i].vertices.size(); ++i) {
             Vec3d corner = uData.at(i).vertices.at(j) - uData.at(i).assistV_d;
-            corner = corner - ((corner|uData.at(i).bline_d)/uData.at(i).bline_d.length())*uData.at(i).bline_d;
+            corner = corner - ((corner|uData.at(i).bline_d)/uData.at(i).bline_d.length())*(uData.at(i).bline_d/uData.at(i).bline_d.length());
             Vec3d base = uData.at(i).vertices.at(j) - corner;
 
             double alpha = acos((corner|uData.at(i).face_d)/(corner.length()*uData.at(i).face_d.length()));
