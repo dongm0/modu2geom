@@ -571,6 +571,9 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     std::vector<VertexHandle> bottom_vec;
     std::vector<std::vector<VertexHandle>> wings;
     //find bottom structure
+
+
+    
     {
         HalfFaceHandle bottom_hf;
         std::set<HalfFaceHandle> _nbhf_set(_nbhf_vec.begin(), _nbhf_vec.end());
