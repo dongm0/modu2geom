@@ -1,5 +1,6 @@
 #include "utils.h"
 #include <igl/arap.h>
+#include <OpenVolumeMesh/Mesh/HexahedralMesh.hh>
 
 class ArapOperator {
 public:
@@ -7,7 +8,7 @@ public:
         static ArapOperator m_instance;
         return m_instance;
     }
-    void Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, );
+    void Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, std::vector<OpenVolumeMesh::VertexHandle> fixed);
 private:
     ArapOperator(){}
     ArapOperator(const ArapOperator &_rhs){}
