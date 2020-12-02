@@ -12,21 +12,8 @@ hispapershowsthatconstraintprogrammingtechniquescansuccessfullybeusedtosolvechal
 
 ## Introduction
 
-Triangle meshes remain a predominant representation of 3D sur-faces. When the complexity of a given mesh exceeds computationalresources, we rely on mesh simplification methods to remove ver-tices, edges, and faces. In rendering, efficient simplification methodscan dramatically reduce the complexity of a mesh without affectingits appearance. It is tempting to repurpose appearance-preservingsimplification methods for other geometry processing tasks.
+At present, in the field of simulating calculation, hexahedral/quad mesh has superiority to tetrahedral/tri mesh. Comparing to Tetrahedral mesh, hex mesh requires much less space to store, and they usually convergence faster than tet mesh. Owing to its properties, people put forward many methods to get hex mesh of high quality. In some cases, wo only know the connections of the mesh, sometimes may have boundary positions, and we want to acquire node positions that ensures mesh quality as high as possible. For example, ()
 
-Unfortunately, appearance-based methods do not preserve thespectral properties of the important differential operators upon whichmuch of modern geometry processing is built (see Figure1). As aresult, solutions computed on such a coarse mesh can be incorrector misleading. Alternatively, previous coarsening methods that dopreserve spectral properties work purely algebraically on the oper-ator matrices and do not produce a geometric mesh (see Figure2).The lack of a mesh limits the use of coarsening in many downstreamgeometry processing tasks.We present the first mesh simplification method intentionallydesigned to preserve spectral properties. 
+Many existing methods can partly solve these questions, such as smoothing, interpolating, and energy-based optimizing methods. Unfortunately, when vertex connections are of low quality, for example, when the input mesh is highly-unstructured, containing lots of singularties, it's difficult to get high-quality and untangled mesh. Some distortion energy may have barrier layers to prevent tangling, but those barriers need an initial untangle mesh. To solve those problems, we put forward a procedure based on thought of mesh accumulation.
 
-We propose adapting thestandard greedy edge-collapse mesh-simplification algorithm with anovel cost function that measures spectral preservation of a given op-erator (e.g., the cotangent Laplacian). Unlike algebraic methods thatdirectly output a reduced operator (i.e., matrix), our method outputsa manifold triangle mesh with 3D vertex positions. Reconstructingthe operator on the output mesh will preserve both the eigenvaluesand eigenvectors of the operator on the input mesh.
-
-Confirmed by a series of experiments, our method preserves spec-tral properties nearly as well as purely algebraic methods, whilestill outputting an embedded mesh like standard simplification algo-rithms. We demonstrate our approach’s effectiveness for geodesicdistance approximation and functional maps correspondence
-
-在当下，六面体网格在仿真计算中仍具有相当优势性的地位，人们用各种各样的方法去得到一个高质量的六面体网格，利用预先计算好的网格模板是其中一种。模板可以用以确定划分时候的奇异graph，也可以在局部优化的时候做替换（ALM，模板（比利时人））。这些任务中都需要从拓扑到几何的转换，通常我们有很多方法来得到优化的网格，例如（能量函数法，插值法，光滑法等等），但是对于拓扑质量低的模板，这些方法往往很难得到高质量无扭的网格（怎么很难奏效的说清除），在本文中我们提出了一套流程，用以解决这个问题。（转化一下，看看第一个做xx问题的人是怎么做的）
-
-写网格优化，很多情况下，我们只知道拓扑链接，希望得到高质量的几何位置，
-st  
-在当下，六面体网格在仿真计算中仍具有相当优势性的地位，人们用各种各样的方法去得到一个高质量的六面体网格。
-
-然而，很多情况下我们只知道拓扑连接，需要从拓扑链接中得到好的几何位置。已有的方法可以解决部分问题，如基于能量函数的方法，插值法，光滑法等等
-
-我们的流程基于单元堆积的思想。在一个已有部分单元集合的模板上，每次生长一个单元，在这个过程中保证它高质量以及合法性（untangle），逐步的完成整个模板的生成。整个过程中需要
-
+Our main approach is to add hexahedral cells step by step, during which we make sure the mesh is untangled and with high quality. We take two steps to accomplish this. First we classified several different situations of adding one cell, and we propose a method to estimate the relationship between cell valence and deform in every step. Using this method, we construct a most suitable sequence to generate the whole mesh. 

@@ -23,12 +23,33 @@ void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, st
         }
         surface_vnum = vset.size();
         vertices.assign(vset.begin(), vset.end());
+        std::unordered_map<OpenVolumeMesh::VertexHandle, int> inv_mapping;
+        for (int i=0; i<vertices.size(); ++i) {
+            inv_mapping[vertices[i]] = i;
+        }
 
         V.resize(surface_vnum, 3);
         F.resize(surface_hf.size()*2, 3);
 
         for (int i=0; i<surface_vnum; ++i) {
-            
+            auto coord = vertices.at(i);
+            V(i, 0) = coord[0];
+            V(i, 1) = coord[1];
+            V(i, 2) = coord[2];
+        }
+
+        for (int i=0; i<surface_hf.size(); ++i) {
+            auto range = _ovm.halfface_vertices(surface_hf[i]);
+            int v1 = inv_mapping[*range.first];
+            int v2 = inv_mapping[*(range.first+1)];
+            int v3 = inv_mapping[*(range.first+2)];
+            int v4 = inv_mapping[*(range.first+3)];
+            F(i*2, 0) = v1;
+            F(i*2, 1) = v2;
+            F(i*2, 2) = v3;
+            F(i*2+1, 0) = v3;
+            F(i*2+1, 1) = v4;
+            F(i*2+1, 2) = v1;
         }
     }
 
