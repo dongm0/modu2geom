@@ -8,10 +8,10 @@ public:
         static ArapOperator m_instance;
         return m_instance;
     }
-    void Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, std::vector<OpenVolumeMesh::VertexHandle> fixed);
+    void Deformation(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, std::vector<OpenVolumeMesh::VertexHandle> fixed);
 private:
     ArapOperator(){}
     ArapOperator(const ArapOperator &_rhs){}
     ArapOperator operator=(const ArapOperator *_rhs){}
 
-};}
+};
