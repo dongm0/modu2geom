@@ -1,6 +1,6 @@
 #include "arapoperator.h"
 #include <Eigen/Dense>
-
+/*
 void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, std::vector<OpenVolumeMesh::VertexHandle> fixed) {
     //找表面并建立映射
     std::vector<OpenVolumeMesh::HalfFaceHandle> surface_hf;
@@ -54,9 +54,10 @@ void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, st
     }
 
 }
+*/
 
 
-void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, std::map<OpenVolumeMesh::VertexHandle, OpenVolumeMesh::Geometry::Vec3d fixed) {
+void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, std::map<OpenVolumeMesh::VertexHandle, OpenVolumeMesh::Geometry::Vec3d> fixed) {
     using namespace Eigen;
     using namespace OpenVolumeMesh;
     Matrix<double, Dynamic, Dynamic> V;
@@ -67,18 +68,18 @@ void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, st
     int i=0;
     int j=0;
     std::vector<int> boundary;
-    for (auto _vh = _ovm.vertices_begin(); _vh != _ovm.vertices.end(); ++_vh) {
-        auto point = _ovm.vertex(_vh);
+    for (auto _vh = _ovm.vertices_begin(); _vh != _ovm.vertices_end(); ++_vh) {
+        auto point = _ovm.vertex(*_vh);
         V(i, 0) = point[0];
         V(i, 1) = point[1];
         V(i, 2) = point[2];
-        if (fixed.find()) {
+        if (fixed.find(*_vh) != fixed.end()) {
             b(j) = i;
-            bc(j, 0) = fixed[_vh][0];
-            bc(j, 1) = fixed[_vh][1];
-            bc(j, 2) = fixed[_vh][2];
+            bc(j, 0) = fixed[*_vh][0];
+            bc(j, 1) = fixed[*_vh][1];
+            bc(j, 2) = fixed[*_vh][2];
         }
-        mapping[_vh] = i;
+        mapping[*_vh] = i;
         ++i;
     }
     auto V0 = V;
@@ -89,6 +90,23 @@ void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, st
     }
     i=0;
     for (auto _ch = _ovm.cells_begin(); _ch != _ovm.cells_end(); ++_ch) {
-        for (auto _vh = _ovm.cv_iter(); _vh)
+        auto _xb = _ovm.xback_halfface(*_ch);
+        auto _xf = _ovm.xfront_halfface(*_ch);
+        auto _xb_range = _ovm.halfface_vertices(_xb);
+        auto _xf_range = _ovm.halfface_vertices(_xf);
+        std::vector<int> _cell_number;
+        std::vector<int> _xf_number;
+        for (auto _vh = _xb_range.first; _vh != _xb_range.second; ++_vh) {
+            _cell_number.push_back(mapping[*_vh]);
+        }
+        int _cnt = 0;
+        for (auto _vh = _xf_range.first; _vh != _xf_range.second; ++_vh) {
+            _xf_number.push_back(mappint[*_vh]);
+        }
+        for (auto _vh = _ovm.vv_iter(*_xb_range.first); _vh.valid(); ++_vh) {
+            if (_xf_number.find(mapping[*_vh]) != _xf_number.end()) {
+                
+            }
+        }
     }
 }
