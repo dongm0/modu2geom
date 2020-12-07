@@ -1,7 +1,7 @@
 #include "arapoperator.h"
 #include <Eigen/Dense>
 
-void ArapOperator::Deformation(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, std::vector<OpenVolumeMesh::VertexHandle> fixed) {
+void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, std::vector<OpenVolumeMesh::VertexHandle> fixed) {
     //找表面并建立映射
     std::vector<OpenVolumeMesh::HalfFaceHandle> surface_hf;
     std::vector<OpenVolumeMesh::VertexHandle> vertices;
@@ -23,7 +23,7 @@ void ArapOperator::Deformation(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm,
         }
         surface_vnum = vset.size();
         vertices.assign(vset.begin(), vset.end());
-        std::map<OpenVolumeMesh::VertexHandle, int> inv_mapping;
+        std::unordered_map<OpenVolumeMesh::VertexHandle, int> inv_mapping;
         for (int i=0; i<vertices.size(); ++i) {
             inv_mapping[vertices[i]] = i;
         }
@@ -33,9 +33,9 @@ void ArapOperator::Deformation(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm,
 
         for (int i=0; i<surface_vnum; ++i) {
             auto coord = vertices.at(i);
-            V(i, 0) = _ovm.vertex(coord)[0];
-            V(i, 1) = _ovm.vertex(coord)[1];
-            V(i, 2) = _ovm.vertex(coord)[2];
+            V(i, 0) = coord[0];
+            V(i, 1) = coord[1];
+            V(i, 2) = coord[2];
         }
 
         for (int i=0; i<surface_hf.size(); ++i) {
@@ -53,4 +53,42 @@ void ArapOperator::Deformation(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm,
         }
     }
 
+}
+
+
+void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, std::map<OpenVolumeMesh::VertexHandle, OpenVolumeMesh::Geometry::Vec3d fixed) {
+    using namespace Eigen;
+    using namespace OpenVolumeMesh;
+    Matrix<double, Dynamic, Dynamic> V;
+    Matrix<int, Dynamic, Dynamic> T;
+    Matrix<int, 1, 1> b;
+    Matrix<double, 1, 1> bc;
+    std::map<VertexHandle, int> mapping;
+    int i=0;
+    int j=0;
+    std::vector<int> boundary;
+    for (auto _vh = _ovm.vertices_begin(); _vh != _ovm.vertices.end(); ++_vh) {
+        auto point = _ovm.vertex(_vh);
+        V(i, 0) = point[0];
+        V(i, 1) = point[1];
+        V(i, 2) = point[2];
+        if (fixed.find()) {
+            b(j) = i;
+            bc(j, 0) = fixed[_vh][0];
+            bc(j, 1) = fixed[_vh][1];
+            bc(j, 2) = fixed[_vh][2];
+        }
+        mapping[_vh] = i;
+        ++i;
+    }
+    auto V0 = V;
+    for (int k=0; k<b.size(); ++k) {
+        V0(b(k), 0) = bc(k, 0);
+        V0(b(k), 1) = bc(k, 1);
+        V0(b(k), 2) = bc(k, 2);
+    }
+    i=0;
+    for (auto _ch = _ovm.cells_begin(); _ch != _ovm.cells_end(); ++_ch) {
+        for (auto _vh = _ovm.cv_iter(); _vh)
+    }
 }
