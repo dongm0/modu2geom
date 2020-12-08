@@ -176,7 +176,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     #endif
     std::vector<VertexHandle> wing1, wing2;
     VertexHandle s1, s2;
-    //find common edge
+    //找底部结构
     {
         std::vector<VertexHandle> bf1(m_topomesh.halfface_vertices(_nbhf_vec[0]).first, m_topomesh.halfface_vertices(_nbhf_vec[0]).second);
         std::vector<VertexHandle> bf2(m_topomesh.halfface_vertices(_nbhf_vec[1]).first, m_topomesh.halfface_vertices(_nbhf_vec[1]).second);
@@ -222,15 +222,26 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
             wing2dir = -1*wing1dir;
         }
         //wing的位置调节
+        std::map<VertexHandle, Vec3d> fixed;
         {
             std::vector<untangleData> uData(2);
             uData[0] = {normdir, wing1dir, bottoml, getCoord_topo(wing1[0]), {getCoord_topo(wing1[2]), getCoord_topo(wing1[3])}};
             uData[1] = {normdir, wing2dir, -1*bottoml, getCoord_topo(wing2[0]), {getCoord_topo(wing2[2]), getCoord_topo(wing2[3])}};
             auto new_pos = untangleBottomFace(uData);
-            setCoord_topo(wing1[2], new_pos[0][0]);
-            setCoord_topo(wing1[3], new_pos[0][1]);
-            setCoord_topo(wing2[2], new_pos[1][0]);
-            setCoord_topo(wing2[3], new_pos[1][1]);
+            fixed[getGeomV(wing1[0])] = getCoord_topo(wing1[0]);
+            fixed[getGeomV(wing1[1])] = getCoord_topo(wing1[1]);
+            fixed[getGeomV(wing1[2])] = new_pos[0][0];
+            fixed[getGeomV(wing1[3])] = new_pos[0][1];
+            fixed[getGeomV(wing2[2])] = new_pos[1][0];
+            fixed[getGeomV(wing2[3])] = new_pos[1][1];
+            //setCoord_topo(wing1[2], new_pos[0][0]);
+            //setCoord_topo(wing1[3], new_pos[0][1]);
+            //setCoord_topo(wing2[2], new_pos[1][0]);
+            //setCoord_topo(wing2[3], new_pos[1][1]);
+        }
+        //变形
+        {
+
         }
     }
     //end
@@ -298,6 +309,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     }
     //deform
     {
+        //结构解扭前的准备
         Vec3d normdir, fan1dir, fan2dir, fan3dir, bottoml1, bottoml2, bottoml3;//估计的法向量，以及两边正交的方向，bottoml是两个底面交线的方向
         {
             VertexHandle wbv1 = opposite_vertex_in_cell(m_topomesh, _nbc_vec[0], 
@@ -320,18 +332,26 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
             fan3dir = tmp - ((tmp|normdir)/normdir.length())*(normdir/normdir.length());
             bottoml3 = normdir%fan3dir;
         }
+        std::map<VertexHandle, Vec3d> fixed;
         {
             std::vector<untangleData> uData(3);
             uData[0] = {normdir, fan1dir, bottoml1, getCoord_topo(fan1[0]), {getCoord_topo(fan1[2]), getCoord_topo(fan1[3])}};
             uData[1] = {normdir, fan2dir, bottoml2, getCoord_topo(fan2[0]), {getCoord_topo(fan2[2]), getCoord_topo(fan2[3])}};
             uData[2] = {normdir, fan3dir, bottoml3, getCoord_topo(fan3[0]), {getCoord_topo(fan3[2]), getCoord_topo(fan3[3])}};
             auto new_pos = untangleBottomFace(uData);
-            setCoord_topo(fan1[2], new_pos[0][0]);
-            setCoord_topo(fan1[3], new_pos[0][1]);
-            setCoord_topo(fan2[2], new_pos[1][0]);
-            setCoord_topo(fan2[3], new_pos[1][1]);
-            setCoord_topo(fan3[2], new_pos[2][0]);
-            setCoord_topo(fan3[3], new_pos[2][1]);
+            fixed[getTopoV(jade)] = getCoord_topo(jade);
+            fixed[getTopoV(fan1[2])] = new_pos[0][0];
+            fixed[getTopoV(fan1[3])] = new_pos[0][1];
+            fixed[getTopoV(fan2[2])] = new_pos[1][0];
+            fixed[getTopoV(fan2[3])] = new_pos[1][1];
+            fixed[getTopoV(fan3[2])] = new_pos[2][0];
+            fixed[getTopoV(fan3[3])] = new_pos[2][1];
+            //setCoord_topo(fan1[2], new_pos[0][0]);
+            //setCoord_topo(fan1[3], new_pos[0][1]);
+            //setCoord_topo(fan2[2], new_pos[1][0]);
+            //setCoord_topo(fan2[3], new_pos[1][1]);
+            //setCoord_topo(fan3[2], new_pos[2][0]);
+            //setCoord_topo(fan3[3], new_pos[2][1]);
         }
     }
 
@@ -411,6 +431,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     //deform
     
     {
+        //解扭之前的准备
         Vec3d normdir, wing1dir, wing2dir, bottoml1, bottoml2;//估计的法向量，以及两边正交的方向
         {
             Vec3d v1 = getCoord_topo(bottom_vec[1]) - getCoord_topo(bottom_vec[0]);
@@ -422,16 +443,26 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
             bottoml1 = v1, bottoml2 = v3;
             wing1dir = bottoml1%normdir, wing2dir = bottoml2%normdir;
         }
+        //底面解扭
+        std::map<VertexHandle, Vec3d> fixed;
         {
             std::vector<untangleData> uData(2);
             uData[0] = {normdir, wing1dir, bottoml1, getCoord_topo(wing1[0]), {getCoord_topo(wing1[2]), getCoord_topo(wing1[3])}};
             uData[1] = {normdir, wing2dir, bottoml2, getCoord_topo(wing2[0]), {getCoord_topo(wing2[2]), getCoord_topo(wing2[3])}};
             //uData[2] = {normdir, fan3dir, bottoml3, getCoord_topo(fan3[0]), {getCoord_topo(fan3[2]), getCoord_topo(fan3[3])}};
             auto new_pos = untangleBottomFace(uData);
-            setCoord_topo(wing1[2], new_pos[0][0]);
-            setCoord_topo(wing1[3], new_pos[0][1]);
-            setCoord_topo(wing2[2], new_pos[1][0]);
-            setCoord_topo(wing2[3], new_pos[1][1]);
+            fixed[getGeomV(wing1[0])] = getCoord_topo(wing1[0]);
+            fixed[getGeomV(wing1[1])] = getCoord_topo(wing1[1]);
+            fixed[getGeomV(wing1[2])] = new_pos[0][0];
+            fixed[getGeomV(wing1[3])] = new_pos[0][1];
+            fixed[getGeomV(wing2[0])] = getCoord_topo(wing2[0]);
+            fixed[getGeomV(wing2[1])] = getCoord_topo(wing2[1]);
+            fixed[getGeomV(wing2[2])] = new_pos[1][0];
+            fixed[getGeomV(wing2[3])] = new_pos[1][1];
+            //setCoord_topo(wing1[2], new_pos[0][0]);
+            //setCoord_topo(wing1[3], new_pos[0][1]);
+            //setCoord_topo(wing2[2], new_pos[1][0]);
+            //setCoord_topo(wing2[3], new_pos[1][1]);
         }
     }
 
@@ -539,17 +570,26 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
             side1bdir = normdir%side1dir, side2bdir = normdir%side2bdir;
         }
         //wing的位置调节
+        std::map<VertexHandle, Vec3d> fixed;
         {
             std::vector<untangleData> uData(2);
             uData[0] = {normdir, side1dir, side1bdir, getCoord_topo(side1[1]), {getCoord_topo(side1[2]), getCoord_topo(side1[3]), getCoord_topo(side1[0])}};
             uData[1] = {normdir, side2dir, side2bdir, getCoord_topo(side2[1]), {getCoord_topo(side2[2]), getCoord_topo(side2[3]), getCoord_topo(side2[0])}};
             auto new_pos = untangleBottomFace(uData);
-            setCoord_topo(side1[2], new_pos[0][0]);
-            setCoord_topo(side1[3], new_pos[0][1]);
-            setCoord_topo(side1[0], new_pos[0][2]);
-            setCoord_topo(side2[2], new_pos[1][0]);
-            setCoord_topo(side2[3], new_pos[1][1]);
-            setCoord_topo(side2[0], new_pos[1][2]);
+            fixed[getGeomV(side1[0])] = new_pos[0][2];
+            fixed[getGeomV(side1[1])] = getCoord_topo(side1[1]);
+            fixed[getGeomV(side1[2])] = new_pos[0][0];
+            fixed[getGeomV(side1[3])] = new_pos[0][1];
+            fixed[getGeomV(side2[0])] = new_pos[1][2];
+            fixed[getGeomV(side2[1])] = getCoord_topo(side2[1]);
+            fixed[getGeomV(side2[2])] = new_pos[1][0];
+            fixed[getGeomV(side2[3])] = new_pos[1][1];
+            //setCoord_topo(side1[2], new_pos[0][0]);
+            //setCoord_topo(side1[3], new_pos[0][1]);
+            //setCoord_topo(side1[0], new_pos[0][2]);
+            //setCoord_topo(side2[2], new_pos[1][0]);
+            //setCoord_topo(side2[3], new_pos[1][1]);
+            //setCoord_topo(side2[0], new_pos[1][2]);
         }
     }
     //end
@@ -614,15 +654,24 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
             wingdir[0] = bottoml[0]%normdir, wingdir[1] = bottoml[1]%normdir, wingdir[2] = bottoml[2]%normdir, wingdir[3] = bottoml[3]%normdir;
         }
         //wing的位置调节
+        std::map<VertexHandle, Vec3d> fixed;
         {
             std::vector<untangleData> uData(2);
             uData[0] = {normdir, wingdir[0], bottoml[0], getCoord_topo(wings[0][0]), {getCoord_topo(wings[0][2]), getCoord_topo(wings[0][3])}};
             uData[1] = {normdir, wingdir[2], bottoml[2], getCoord_topo(wings[2][0]), {getCoord_topo(wings[2][2]), getCoord_topo(wings[2][3])}};
             auto new_pos = untangleBottomFace(uData);
-            setCoord_topo(wings[0][2], new_pos[0][0]);
-            setCoord_topo(wings[0][3], new_pos[0][1]);
-            setCoord_topo(wings[2][2], new_pos[1][0]);
-            setCoord_topo(wings[2][3], new_pos[1][1]);
+            fixed[getGeomV(wings[0][0])] = getCoord_topo(wings[0][0]);
+            fixed[getGeomV(wings[0][1])] = getCoord_topo(wings[0][1]);
+            fixed[getGeomV(wings[0][2])] = new_pos[0][0];
+            fixed[getGeomV(wings[0][3])] = new_pos[0][1];
+            fixed[getGeomV(wings[2][0])] = getCoord_topo(wings[2][0]);
+            fixed[getGeomV(wings[2][1])] = getCoord_topo(wings[2][1]);
+            fixed[getGeomV(wings[2][2])] = new_pos[1][0];
+            fixed[getGeomV(wings[2][3])] = new_pos[1][1];
+            //setCoord_topo(wings[0][2], new_pos[0][0]);
+            //setCoord_topo(wings[0][3], new_pos[0][1]);
+            //setCoord_topo(wings[2][2], new_pos[1][0]);
+            //setCoord_topo(wings[2][3], new_pos[1][1]);
         }
     }
 

@@ -56,6 +56,13 @@ void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, st
 }
 */
 
+const int hex2tet[32] = {0, 1, 3, 4, 
+                         1, 2, 0, 5, 
+                         2, 3, 6, 1, 
+                         3, 0, 2, 7, 
+                         4, 7, 5, 0, 
+                         6, 5, 7, 2, 
+                         5, 4, 6, 1};
 
 void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, std::map<OpenVolumeMesh::VertexHandle, OpenVolumeMesh::Geometry::Vec3d> fixed) {
     using namespace Eigen;
@@ -101,12 +108,25 @@ void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, st
         }
         int _cnt = 0;
         for (auto _vh = _xf_range.first; _vh != _xf_range.second; ++_vh) {
-            _xf_number.push_back(mappint[*_vh]);
+            _xf_number.push_back(mapping[*_vh]);
         }
         for (auto _vh = _ovm.vv_iter(*_xb_range.first); _vh.valid(); ++_vh) {
-            if (_xf_number.find(mapping[*_vh]) != _xf_number.end()) {
-                
+            for (int ii=0; ii<4; ++ii) {
+                if (mapping[*_vh] == _xf_number[ii]) {
+                    for (int jj=0; jj<4; ++jj) {
+                        _cell_number.push_back(_xf_number[(ii-jj+3)%4]);
+                    }
+                    break;
+                }
+            }
+            if (_cell_number.size() > 4) break;
+        }
+        for (int j=0; j<8; ++j) {
+            for (int k=0; k<4; ++k) {
+                T(i*8+j, k) = _cell_number[hex2tet[j*4+k]];
             }
         }
     }
+
+    
 }
