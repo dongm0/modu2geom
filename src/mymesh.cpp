@@ -52,6 +52,21 @@ ErrorCode MyMesh::ReadTopoFromFile(const std::string &filename) {
     return ErrorCode::succeed;
 }
 
+ErrorCode MyMesh::GenerateOrder() {
+    for (auto _ch : m_topomesh.cells()) {
+        m_generate_order.push_back(_ch);
+    }
+    return ErrorCode::succeed;
+}
+
+ErrorCode MyMesh::WriteGeomToVTKFile(const std::string &filename) {
+    OpenVolumeMesh::IO::FileManager fManager;
+    if (!fManager.writeFile("filename", m_mesh)) {
+        return ErrorCode::failed;
+    }
+    return ErrorCode::succeed;
+}
+
 ErrorCode MyMesh::GenerateOneCell(const OpenVolumeMesh::CellHandle &_ch) {
     using namespace OpenVolumeMesh;
 

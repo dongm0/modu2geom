@@ -2,6 +2,7 @@
 
 #include <OpenVolumeMesh/Mesh/HexahedralMesh.hh>
 #include <OpenVolumeMesh/Geometry/VectorT.hh>
+#include <OpenVolumeMesh/FileManager/FileManager.hh>
 #include "utils.h"
 
 struct untangleData {
@@ -17,10 +18,18 @@ public:
 
     //可以用>>操作符
     ErrorCode ReadTopoFromFile(const std::string &filename);
-    ErrorCode GenerateOrder(std::vector<uint8_t> &_order);
+    ErrorCode WriteGeomToVTKFile(const std::string &filename);
+    ErrorCode GenerateOrder();
     ErrorCode GenerateOneCell(const OpenVolumeMesh::CellHandle &_ch);
 
     ErrorCode Optimize();
+    
+    int GetTopoVnum() {return m_topomesh.n_vertices();}
+    int GetTopoCnum() {return m_topomesh.n_cells();}
+    int GetGeomVnum() {return m_mesh.n_vertices();}
+    int GetGeomCnum() {return m_mesh.n_cells();}
+
+    OpenVolumeMesh::CellHandle GetCurrentCellHandle() {return m_cur_chandle;}
 
 private:
 
@@ -98,4 +107,7 @@ private:
     std::map<OpenVolumeMesh::CellHandle, OpenVolumeMesh::CellHandle> m_tm2m_mapping;
     std::map<OpenVolumeMesh::VertexHandle, OpenVolumeMesh::VertexHandle> m_m2tm_v_mapping;
     std::map<OpenVolumeMesh::VertexHandle, OpenVolumeMesh::VertexHandle> m_tm2m_v_mapping;
+    
+    std::vector<OpenVolumeMesh::CellHandle> m_generate_order;
+    OpenVolumeMesh::CellHandle m_cur_chandle;
 };

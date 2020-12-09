@@ -26,8 +26,8 @@ void MsqOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm) {
         coords.push_back(c[2]);
     }
     std::vector<int> fixedflag;
-    std::vector<int> connection;
-
+    std::vector<unsigned long> connection;
+    
     ArrayMesh msqmesh(3, _ovm.n_vertices(), coords.data(), fixedflag.data(), _ovm.n_cells(), HEXAHEDRON, connection.data());
     //auto msqmesh = OVMmesh2MSQmesh(_ovm);
 
