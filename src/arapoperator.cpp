@@ -128,5 +128,14 @@ void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, st
         }
     }
 
+    //slim完了
+    std::vector<VertexHandle> inmapping(mapping.size());
+    for (auto x : mapping) {
+        inmapping[x.second] = x.first;
+    }
+    for (int i=0; i<mapping.size(); ++i) {
+        _ovm.set_vertex(inmapping[i], Vec3d(V(i, 0), V(i, 1), V(i, 2)));
+    }
+
     
 }
