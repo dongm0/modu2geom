@@ -1,4 +1,7 @@
 #include "mymesh.h"
+#include "arapoperator.h"
+#include "msqoptimizer.h"
+/*
 #include <Mesquite/Mesquite_ArrayMesh.hpp>
 #include <Mesquite_IdealShapeTarget.hpp>
 #include <Mesquite_TMetric.hpp>
@@ -6,6 +9,7 @@
 #include <Mesquite_ElementPMeanP.hpp>
 #include <Mesquite_InstructionQueue.hpp>
 #include <Mesquite_ConjugateGradient.hpp>
+*/
 
 ErrorCode MyMesh::ReadTopoFromFile(const std::string &filename) {
     using namespace OpenVolumeMesh;
@@ -14,11 +18,14 @@ ErrorCode MyMesh::ReadTopoFromFile(const std::string &filename) {
 
     uint8_t _cnum = 0;
     uint8_t _vnum = 0;
-    fin >> _cnum;
+    int _tmp;
+    fin >> _tmp;
+    _cnum = _tmp;
     m_cells.assign(_cnum, std::vector<uint8_t>(8));
     for (uint8_t i=0; i<_cnum; ++i) {
         for (uint8_t j=0; j<8; ++j) {
-            fin >> m_cells.at(i).at(j);
+            fin >> _tmp;
+            m_cells[i][j] = _tmp;
             _vnum = std::max(_vnum, m_cells.at(i).at(j));
         }
     }
@@ -26,12 +33,12 @@ ErrorCode MyMesh::ReadTopoFromFile(const std::string &filename) {
 
     //add vertices
     for (uint8_t i=0; i<_vnum; ++i) {
-        auto _topo_v = m_mesh.add_vertex(Vec3d(0, 0, 0));
-        auto _v = m_topomesh.add_vertex();
-        m_vertices.push_back(_topo_v);
-        m_topo_vertices.push_back(_v);
-        m_m2tm_v_mapping[_v] = _topo_v;
-        m_tm2m_v_mapping[_topo_v] = _v;
+        auto geom_v = m_mesh.add_vertex(Vec3d(0, 0, 0));
+        auto topo_v = m_topomesh.add_vertex();
+        m_vertices.push_back(geom_v);
+        m_topo_vertices.push_back(topo_v);
+        m_m2tm_v_mapping[geom_v] = topo_v;
+        m_tm2m_v_mapping[topo_v] = geom_v;
     }
 
     //add topo cells
@@ -93,12 +100,14 @@ ErrorCode MyMesh::GenerateOneCell(const OpenVolumeMesh::CellHandle &_ch) {
                 }
             }
         }
-        for (auto cc_iter=m_topomesh.cc_iter(_ch); cc_iter->is_valid(); ++cc_iter) {
+        /*
+        for (auto c_it=m_topomesh.cc_iter(_ch); c_it->is_valid(); ++c_it) {
             if (m_tm2m_mapping.find(_ch) == m_tm2m_mapping.end()) {
                 num_nbh++;
-                _nbh.push_back(*cc_iter);
+                _nbh.push_back(*c_it);
             }
         }
+        */
         if (num_nbh == 3) {
             if (m_topomesh.opposite_halfface_handle_in_cell(_nbh_hf[0], _ch) == _nbh_hf[1]
             or m_topomesh.opposite_halfface_handle_in_cell(_nbh_hf[0], _ch) == _nbh_hf[2]
@@ -115,6 +124,21 @@ ErrorCode MyMesh::GenerateOneCell(const OpenVolumeMesh::CellHandle &_ch) {
             else
                 return ErrorCode::failed;
         }
+
+        if (casenum == 0)
+            AddOneCellCase0(_ch, _nbh, _nbh_hf);
+        else if (casenum == 1)
+            AddOneCellCase1(_ch, _nbh, _nbh_hf);
+        else if (casenum == 2)
+            AddOneCellCase2(_ch, _nbh, _nbh_hf);
+        else if (casenum == 3)
+            AddOneCellCase3(_ch, _nbh, _nbh_hf);
+        else if (casenum == 4)
+            AddOneCellCase4(_ch, _nbh, _nbh_hf);
+        else if (casenum == 5)
+            AddOneCellCase5(_ch, _nbh, _nbh_hf);
+        else if (casenum == 6)
+            AddOneCellCase6(_ch, _nbh, _nbh_hf);
     }
 
 }
@@ -256,7 +280,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
         }
         //变形
         {
-
+            ArapOperator::Instance().Optimize(m_mesh, fixed);
         }
     }
     //end
@@ -368,6 +392,9 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
             //setCoord_topo(fan3[2], new_pos[2][0]);
             //setCoord_topo(fan3[3], new_pos[2][1]);
         }
+        {
+            ArapOperator::Instance().Optimize(m_mesh, fixed);
+        }
     }
 
     //end
@@ -478,6 +505,9 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
             //setCoord_topo(wing1[3], new_pos[0][1]);
             //setCoord_topo(wing2[2], new_pos[1][0]);
             //setCoord_topo(wing2[3], new_pos[1][1]);
+        }
+        {
+            ArapOperator::Instance().Optimize(m_mesh, fixed);
         }
     }
 
@@ -606,6 +636,9 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
             //setCoord_topo(side2[3], new_pos[1][1]);
             //setCoord_topo(side2[0], new_pos[1][2]);
         }
+        {
+            ArapOperator::Instance().Optimize(m_mesh, fixed);
+        }
     }
     //end
     std::vector<VertexHandle> cell_vertices{getGeomV(bottom1[0]), getGeomV(bottom1[1]), getGeomV(bottom1[2]), 
@@ -688,6 +721,9 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
             //setCoord_topo(wings[2][2], new_pos[1][0]);
             //setCoord_topo(wings[2][3], new_pos[1][1]);
         }
+        {
+            ArapOperator::Instance().Optimize(m_mesh, fixed);
+        }
     }
 
     //end
@@ -736,8 +772,11 @@ std::vector<std::vector<OpenVolumeMesh::Vec3d>> MyMesh::untangleBottomFace(const
     return _res;
 }
 
-/*
+
 ErrorCode MyMesh::Optimize() {
+    MsqOperator::Instance().Optimize(m_mesh);
+    return ErrorCode::succeed;
+    /*
     using namespace Mesquite;
     std::vector<double> coords;
     for (auto v_it = m_mesh.vertices_begin(); v_it!=m_mesh.vertices_end(); ++v_it) {
@@ -772,5 +811,5 @@ ErrorCode MyMesh::Optimize() {
     }
 
     return ErrorCode::succeed;
+    */
 }
-*/

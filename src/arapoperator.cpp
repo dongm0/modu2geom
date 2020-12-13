@@ -1,5 +1,6 @@
 #include "arapoperator.h"
 #include <Eigen/Dense>
+#include <igl/slim.h>
 /*
 void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, std::vector<OpenVolumeMesh::VertexHandle> fixed) {
     //找表面并建立映射
@@ -127,6 +128,10 @@ void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, st
             }
         }
     }
+    //slim
+    igl::SLIMData sData;
+    igl::slim_precompute(V, T, V0, sData, igl::MappingEnergyType::SYMMETRIC_DIRICHLET, b, bc, 1e6);
+    igl::slim_solve(sData, 1);
 
     //slim完了
     std::vector<VertexHandle> inmapping(mapping.size());
