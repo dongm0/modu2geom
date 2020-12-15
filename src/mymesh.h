@@ -3,6 +3,7 @@
 #include <OpenVolumeMesh/Mesh/HexahedralMesh.hh>
 #include <OpenVolumeMesh/Geometry/VectorT.hh>
 #include <OpenVolumeMesh/FileManager/FileManager.hh>
+//#include <OpenVolumeMesh/FileManager/FileManagerT_impl.hh>
 #include "utils.h"
 
 struct untangleData {
@@ -17,12 +18,12 @@ class MyMesh {
 public:
 
     //可以用>>操作符
-    ErrorCode ReadTopoFromFile(const std::string &filename);
-    ErrorCode WriteGeomToVTKFile(const std::string &filename);
-    ErrorCode GenerateOrder();
-    ErrorCode GenerateOneCell(const OpenVolumeMesh::CellHandle &_ch);
+    bool ReadTopoFromFile(const std::string &filename);
+    bool WriteGeomToVTKFile(const std::string &filename);
+    bool GenerateOrder();
+    bool GenerateOneCell(const OpenVolumeMesh::CellHandle &_ch);
 
-    ErrorCode Optimize();
+    bool Optimize();
     
     int GetTopoVnum() {return m_topomesh.n_vertices();}
     int GetTopoCnum() {return m_topomesh.n_cells();}
@@ -34,31 +35,31 @@ public:
 private:
 
     //加入cell的一系列函数
-    ErrorCode AddOneCellCase0(const OpenVolumeMesh::CellHandle &_ch, 
+    bool AddOneCellCase0(const OpenVolumeMesh::CellHandle &_ch, 
         const std::vector<OpenVolumeMesh::CellHandle> &_nbc_vec, 
         const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec);
 
-    ErrorCode AddOneCellCase1(const OpenVolumeMesh::CellHandle &_ch, 
+    bool AddOneCellCase1(const OpenVolumeMesh::CellHandle &_ch, 
         const std::vector<OpenVolumeMesh::CellHandle> &_nbc_vec, 
         const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec);
 
-    ErrorCode AddOneCellCase2(const OpenVolumeMesh::CellHandle &_ch, 
+    bool AddOneCellCase2(const OpenVolumeMesh::CellHandle &_ch, 
         const std::vector<OpenVolumeMesh::CellHandle> &_nbc_vec, 
         const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec);
 
-    ErrorCode AddOneCellCase3(const OpenVolumeMesh::CellHandle &_ch, 
+    bool AddOneCellCase3(const OpenVolumeMesh::CellHandle &_ch, 
         const std::vector<OpenVolumeMesh::CellHandle> &_nbc_vec, 
         const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec);
 
-    ErrorCode AddOneCellCase4(const OpenVolumeMesh::CellHandle &_ch, 
+    bool AddOneCellCase4(const OpenVolumeMesh::CellHandle &_ch, 
         const std::vector<OpenVolumeMesh::CellHandle> &_nbc_vec, 
         const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec);
 
-    ErrorCode AddOneCellCase5(const OpenVolumeMesh::CellHandle &_ch, 
+    bool AddOneCellCase5(const OpenVolumeMesh::CellHandle &_ch, 
         const std::vector<OpenVolumeMesh::CellHandle> &_nbc_vec, 
         const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec);
 
-    ErrorCode AddOneCellCase6(const OpenVolumeMesh::CellHandle &_ch, 
+    bool AddOneCellCase6(const OpenVolumeMesh::CellHandle &_ch, 
         const std::vector<OpenVolumeMesh::CellHandle> &_nbc_vec, 
         const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec);
 

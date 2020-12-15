@@ -11,7 +11,7 @@
 #include <Mesquite_ConjugateGradient.hpp>
 */
 
-ErrorCode MyMesh::ReadTopoFromFile(const std::string &filename) {
+bool MyMesh::ReadTopoFromFile(const std::string &filename) {
     using namespace OpenVolumeMesh;
     
     std::ifstream fin(filename.c_str());
@@ -56,33 +56,34 @@ ErrorCode MyMesh::ReadTopoFromFile(const std::string &filename) {
             m_topomesh.add_cell(_cell, false);
         #endif
     }
-    return ErrorCode::succeed;
+    return true;
 }
 
-ErrorCode MyMesh::GenerateOrder() {
+bool MyMesh::GenerateOrder() {
     for (auto _ch : m_topomesh.cells()) {
         m_generate_order.push_back(_ch);
     }
-    return ErrorCode::succeed;
+    return true;
 }
 
-ErrorCode MyMesh::WriteGeomToVTKFile(const std::string &filename) {
-    OpenVolumeMesh::IO::FileManager fManager;
-    if (!fManager.writeFile("filename", m_mesh)) {
-        return ErrorCode::failed;
-    }
-    return ErrorCode::succeed;
+bool MyMesh::WriteGeomToVTKFile(const std::string &filename) {
+    auto m = MsqOperator::Instance().Ovm2Msq(m_mesh);
+    Mesquite::MsqError err;
+    m.write_vtk(filename.c_str(), err);
+    if (!err)
+        return true;
+    return false;
 }
 
-ErrorCode MyMesh::GenerateOneCell(const OpenVolumeMesh::CellHandle &_ch) {
+bool MyMesh::GenerateOneCell(const OpenVolumeMesh::CellHandle &_ch) {
     using namespace OpenVolumeMesh;
 
     if (m_tm2m_mapping.find(_ch) != m_tm2m_mapping.end()) {
         auto _tmpch = m_tm2m_mapping[_ch];
         if (m_m2tm_mapping.find(_tmpch) != m_m2tm_mapping.end() && m_m2tm_mapping[_tmpch]==_ch)
-            return ErrorCode::succeed;
+            return true;
         else
-            return ErrorCode::failed;
+            return false;
     }
     // 6 cases
     int num_nbh = 0, casenum = -1;
@@ -122,7 +123,7 @@ ErrorCode MyMesh::GenerateOneCell(const OpenVolumeMesh::CellHandle &_ch) {
             else if (num_nbh==4 or num_nbh==5)
                 casenum = num_nbh+1;
             else
-                return ErrorCode::failed;
+                return false;
         }
 
         if (casenum == 0)
@@ -140,10 +141,10 @@ ErrorCode MyMesh::GenerateOneCell(const OpenVolumeMesh::CellHandle &_ch) {
         else if (casenum == 6)
             AddOneCellCase6(_ch, _nbh, _nbh_hf);
     }
-
+    return true;
 }
 
-ErrorCode MyMesh::AddOneCellCase0(const OpenVolumeMesh::CellHandle &_ch, 
+bool MyMesh::AddOneCellCase0(const OpenVolumeMesh::CellHandle &_ch, 
 const std::vector<OpenVolumeMesh::CellHandle> &_nbc_vec, 
 const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     #ifndef NDEBUG
@@ -172,10 +173,10 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     m_tm2m_mapping[_ch] = _geomch;
     m_m2tm_mapping[_geomch] = _ch;
 
-    return ErrorCode::succeed;
+    return true;
 }
 
-ErrorCode MyMesh::AddOneCellCase1(const OpenVolumeMesh::CellHandle &_ch, 
+bool MyMesh::AddOneCellCase1(const OpenVolumeMesh::CellHandle &_ch, 
 const std::vector<OpenVolumeMesh::CellHandle> &_nbc_vec, 
 const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     using namespace OpenVolumeMesh;
@@ -204,9 +205,9 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     m_tm2m_mapping[_ch] = _geomch;
     m_m2tm_mapping[_geomch] = _ch;
 
-    return ErrorCode::succeed;
+    return true;
 }
-ErrorCode MyMesh::AddOneCellCase2(const OpenVolumeMesh::CellHandle &_ch, 
+bool MyMesh::AddOneCellCase2(const OpenVolumeMesh::CellHandle &_ch, 
 const std::vector<OpenVolumeMesh::CellHandle> &_nbc_vec, 
 const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     using namespace OpenVolumeMesh;
@@ -302,9 +303,9 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     m_m2tm_mapping[_geomch] = _ch;
 
 
-    return ErrorCode::succeed;
+    return true;
 }
-ErrorCode MyMesh::AddOneCellCase3(const OpenVolumeMesh::CellHandle &_ch, 
+bool MyMesh::AddOneCellCase3(const OpenVolumeMesh::CellHandle &_ch, 
 const std::vector<OpenVolumeMesh::CellHandle> &_nbc_vec, 
 const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     using namespace OpenVolumeMesh;
@@ -414,10 +415,10 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     m_tm2m_mapping[_ch] = _geomch;
     m_m2tm_mapping[_geomch] = _ch;
 
-    return ErrorCode::succeed;
+    return true;
 }
 
-ErrorCode MyMesh::AddOneCellCase4(const OpenVolumeMesh::CellHandle &_ch, 
+bool MyMesh::AddOneCellCase4(const OpenVolumeMesh::CellHandle &_ch, 
 const std::vector<OpenVolumeMesh::CellHandle> &_nbc_vec, 
 const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     using namespace OpenVolumeMesh;
@@ -439,7 +440,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
             num_b = 0, num_w1 = 1, num_w2 = 2;
         }
         else {
-            return ErrorCode::failed;
+            return false;
         }
         std::vector<VertexHandle> bf1(m_topomesh.halfface_vertices(_nbhf_vec[num_b]).first, m_topomesh.halfface_vertices(_nbhf_vec[num_b]).second);
         std::vector<VertexHandle> bf2(m_topomesh.halfface_vertices(_nbhf_vec[num_w1]).first, m_topomesh.halfface_vertices(_nbhf_vec[num_w1]).second);
@@ -518,9 +519,9 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     m_tm2m_mapping[_ch] = _geomch;
     m_m2tm_mapping[_geomch] = _ch;
 
-    return ErrorCode::succeed;
+    return true;
 }
-ErrorCode MyMesh::AddOneCellCase5(const OpenVolumeMesh::CellHandle &_ch, 
+bool MyMesh::AddOneCellCase5(const OpenVolumeMesh::CellHandle &_ch, 
 const std::vector<OpenVolumeMesh::CellHandle> &_nbc_vec, 
 const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     using namespace OpenVolumeMesh;
@@ -647,9 +648,9 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     m_tm2m_mapping[_ch] = _geomch;
     m_m2tm_mapping[_geomch] = _ch;
 
-    return ErrorCode::succeed;
+    return true;
 }
-ErrorCode MyMesh::AddOneCellCase6(const OpenVolumeMesh::CellHandle &_ch, 
+bool MyMesh::AddOneCellCase6(const OpenVolumeMesh::CellHandle &_ch, 
 const std::vector<OpenVolumeMesh::CellHandle> &_nbc_vec, 
 const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     using namespace OpenVolumeMesh;
@@ -733,7 +734,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     m_tm2m_mapping[_ch] = _geomch;
     m_m2tm_mapping[_geomch] = _ch;
 
-    return ErrorCode::succeed;
+    return true;
 }
 
 std::vector<std::vector<OpenVolumeMesh::Vec3d>> MyMesh::untangleBottomFace(const std::vector<untangleData> &uData) {
@@ -773,9 +774,9 @@ std::vector<std::vector<OpenVolumeMesh::Vec3d>> MyMesh::untangleBottomFace(const
 }
 
 
-ErrorCode MyMesh::Optimize() {
+bool MyMesh::Optimize() {
     MsqOperator::Instance().Optimize(m_mesh);
-    return ErrorCode::succeed;
+    return true;
     /*
     using namespace Mesquite;
     std::vector<double> coords;
@@ -810,6 +811,6 @@ ErrorCode MyMesh::Optimize() {
         m_mesh.set_vertex(*v_it, OpenVolumeMesh::Geometry::Vec3d(coords[i*3], coords[i*3+1], coords[i*3+2]));
     }
 
-    return ErrorCode::succeed;
+    return true;
     */
 }
