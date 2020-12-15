@@ -14,7 +14,11 @@
 bool MyMesh::ReadTopoFromFile(const std::string &filename) {
     using namespace OpenVolumeMesh;
     
-    std::ifstream fin(filename.c_str());
+    std::ifstream fin;
+    fin.open("./con171.txt");
+    if (fin.fail()) {
+        return false;
+    }
 
     uint8_t _cnum = 0;
     uint8_t _vnum = 0;
@@ -30,6 +34,7 @@ bool MyMesh::ReadTopoFromFile(const std::string &filename) {
         }
     }
     fin.close();
+    _vnum += 1;
 
     //add vertices
     for (uint8_t i=0; i<_vnum; ++i) {
@@ -42,14 +47,12 @@ bool MyMesh::ReadTopoFromFile(const std::string &filename) {
     }
 
     //add topo cells
+    std::vector<VertexHandle> _cell(8);
     for (uint8_t i=0; i<_cnum; ++i) {
-        std::vector<VertexHandle> _cell;
         for (uint8_t j=0; j<8; ++j) {
-            _cell.push_back(m_topo_vertices.at(m_cells.at(i).at(j)));
+            _cell[j] = (m_topo_vertices.at(m_cells.at(i).at(j)));
         }
-        auto tmp = _cell[5];
-        _cell[5] = _cell[7];
-        _cell[7] = tmp;
+        std::swap(_cell[5], _cell[7]);
         #ifdef OVM_TOPOLOGY_CHECK
             m_topomesh.add_cell(_cell, true);
         #else
@@ -94,7 +97,7 @@ bool MyMesh::GenerateOneCell(const OpenVolumeMesh::CellHandle &_ch) {
             auto opposite_hf = m_topomesh.opposite_halfface_handle(hf_handle);
             if (opposite_hf.is_valid() && opposite_hf.idx()!=hf_handle.idx()) {
                 auto _nbch = m_topomesh.incident_cell(opposite_hf);
-                if (m_tm2m_mapping.find(_ch) == m_tm2m_mapping.end()) {
+                if (m_tm2m_mapping.find(_nbch) != m_tm2m_mapping.end()) {
                     num_nbh++;
                     _nbh.push_back(_nbch);
                     _nbh_hf.push_back(hf_handle);
@@ -154,7 +157,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     auto bottomface = m_topomesh.zback_halfface(_ch);
     auto b_range = m_topomesh.halfface_vertices(bottomface);
     std::vector<VertexHandle> bottomvec(b_range.first, b_range.second);
-    std::vector<VertexHandle> topvec = opposite_vertex_in_cell(m_topomesh, _ch, _nbhf_vec[0], bottomvec);
+    std::vector<VertexHandle> topvec = opposite_vertex_in_cell(m_topomesh, _ch, bottomface, bottomvec);
 
     #ifndef NDEBUG
         assert(topvec.size()==4);

@@ -30,7 +30,7 @@ public:
     int GetGeomVnum() {return m_mesh.n_vertices();}
     int GetGeomCnum() {return m_mesh.n_cells();}
 
-    OpenVolumeMesh::CellHandle GetCurrentCellHandle() {return m_cur_chandle;}
+    OpenVolumeMesh::CellHandle GetCurrentCellHandle() {return m_generate_order[m_cur_idx++];}
 
 private:
 
@@ -80,20 +80,21 @@ private:
     std::vector<OpenVolumeMesh::VertexHandle> opposite_vertex_in_cell(const OpenVolumeMesh::HexahedralMeshTopologyKernel &mesh, 
     const OpenVolumeMesh::CellHandle &cell, const OpenVolumeMesh::HalfFaceHandle &hf, 
     const std::vector<OpenVolumeMesh::VertexHandle> &v) {
-        auto opposite_hf = mesh.opposite_halfface_handle_in_cell(hf, cell);
-        auto range_t = mesh.halfface_vertices(opposite_hf);
-        std::set<OpenVolumeMesh::VertexHandle> topset(range_t.first, range_t.second);
-        std::vector<OpenVolumeMesh::VertexHandle> res;
-        for (auto x : v) {
-            for (auto vv_it=mesh.vv_iter(x); vv_it.valid(); ++vv_it) {
-                if (topset.count(*vv_it)) {
-                    res.push_back(*vv_it);
-                    break;
-                }
+    auto opposite_hf = mesh.opposite_halfface_handle_in_cell(hf, cell);
+    auto range_t = mesh.halfface_vertices(opposite_hf);
+    std::set<OpenVolumeMesh::VertexHandle> topset(range_t.first, range_t.second);
+    std::vector<OpenVolumeMesh::VertexHandle> res;
+    for (auto x : v) {
+        for (auto vv_it=mesh.vv_iter(x); vv_it.valid(); ++vv_it) {
+            if (topset.count(*vv_it)) {
+                res.push_back(*vv_it);
+                break;
             }
         }
-        return res;
     }
+    return res;
+}
+
 
     std::vector<std::vector<OpenVolumeMesh::Vec3d>> untangleBottomFace(const std::vector<untangleData> &uData);
 
@@ -110,5 +111,5 @@ private:
     std::map<OpenVolumeMesh::VertexHandle, OpenVolumeMesh::VertexHandle> m_tm2m_v_mapping;
     
     std::vector<OpenVolumeMesh::CellHandle> m_generate_order;
-    OpenVolumeMesh::CellHandle m_cur_chandle;
+    int m_cur_idx = 0;
 };
