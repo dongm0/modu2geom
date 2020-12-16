@@ -74,8 +74,7 @@ void MsqOperator::Ovm2MsqOut(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, s
     //std::shared_ptr<bool> fixed = std::make_shared(new bool(_ovm.n_vertices()));
     bool *fixed = new bool(_ovm.n_vertices());
     for (int i=0; i<_ovm.n_vertices(); ++i) {
-        if (i<=1) fixed[i] = 1;
-        else fixed[i] = 0;
+        fixed[i] = 0;
     }
     
     //ArrayMesh msqmesh(3, _ovm.n_vertices(), coords.data(), fixedflag.data(), _ovm.n_cells(), HEXAHEDRON, connection.data());

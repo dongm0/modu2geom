@@ -38,12 +38,12 @@ bool MyMesh::ReadTopoFromFile(const std::string &filename) {
 
     //add vertices
     for (uint8_t i=0; i<_vnum; ++i) {
-        auto geom_v = m_mesh.add_vertex(Vec3d(0, 0, 0));
+        //auto geom_v = m_mesh.add_vertex(Vec3d(0, 0, 0));
         auto topo_v = m_topomesh.add_vertex();
-        m_vertices.push_back(geom_v);
+        //m_vertices.push_back(geom_v);
         m_topo_vertices.push_back(topo_v);
-        m_m2tm_v_mapping[geom_v] = topo_v;
-        m_tm2m_v_mapping[topo_v] = geom_v;
+        //m_m2tm_v_mapping[geom_v] = topo_v;
+        //m_tm2m_v_mapping[topo_v] = geom_v;
     }
 
     //add topo cells
@@ -56,7 +56,7 @@ bool MyMesh::ReadTopoFromFile(const std::string &filename) {
         #ifdef OVM_TOPOLOGY_CHECK
             m_topomesh.add_cell(_cell, true);
         #else
-            m_topomesh.add_cell(_cell, false);
+            m_topomesh.add_cell(_cell, true);//false
         #endif
     }
     return true;
@@ -158,6 +158,32 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     #ifndef NDEBUG
         assert(topvec.size()==4);
     #endif
+    std::vector<VertexHandle> geomvertices(8);
+    geomvertices[0] = m_mesh.add_vertex(Vec3d(0, 0, 0));
+    geomvertices[1] = m_mesh.add_vertex(Vec3d(1, 0, 0));
+    geomvertices[2] = m_mesh.add_vertex(Vec3d(1, 1, 0));
+    geomvertices[3] = m_mesh.add_vertex(Vec3d(0, 1, 0));
+    geomvertices[4] = m_mesh.add_vertex(Vec3d(0, 0, 1));
+    geomvertices[5] = m_mesh.add_vertex(Vec3d(1, 0, 1));
+    geomvertices[6] = m_mesh.add_vertex(Vec3d(1, 1, 1));
+    geomvertices[7] = m_mesh.add_vertex(Vec3d(0, 1, 1));
+    m_tm2m_v_mapping[bottomvec[0]] = geomvertices[0];
+    m_tm2m_v_mapping[bottomvec[1]] = geomvertices[1];
+    m_tm2m_v_mapping[bottomvec[2]] = geomvertices[2];
+    m_tm2m_v_mapping[bottomvec[3]] = geomvertices[3];
+    m_tm2m_v_mapping[topvec[0]] = geomvertices[4];
+    m_tm2m_v_mapping[topvec[1]] = geomvertices[5];
+    m_tm2m_v_mapping[topvec[2]] = geomvertices[6];
+    m_tm2m_v_mapping[topvec[3]] = geomvertices[7];
+    m_m2tm_v_mapping[geomvertices[0]] = bottomvec[0];
+    m_m2tm_v_mapping[geomvertices[1]] = bottomvec[1];
+    m_m2tm_v_mapping[geomvertices[2]] = bottomvec[2];
+    m_m2tm_v_mapping[geomvertices[3]] = bottomvec[3];
+    m_m2tm_v_mapping[geomvertices[4]] = topvec[0];
+    m_m2tm_v_mapping[geomvertices[5]] = topvec[1];
+    m_m2tm_v_mapping[geomvertices[6]] = topvec[2];
+    m_m2tm_v_mapping[geomvertices[7]] = topvec[3];
+    /*
     m_mesh.set_vertex(getGeomV(bottomvec[0]), Vec3d(0, 0, 0));
     m_mesh.set_vertex(getGeomV(bottomvec[1]), Vec3d(1, 0, 0));
     m_mesh.set_vertex(getGeomV(bottomvec[2]), Vec3d(1, 1, 0));
@@ -166,9 +192,9 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     m_mesh.set_vertex(getGeomV(topvec[1]), Vec3d(1, 0, 1));
     m_mesh.set_vertex(getGeomV(topvec[2]), Vec3d(1, 1, 1));
     m_mesh.set_vertex(getGeomV(topvec[3]), Vec3d(0, 1, 1));
-    std::vector<VertexHandle> cell_vertices{getGeomV(bottomvec[0]), getGeomV(bottomvec[1]), getGeomV(bottomvec[2]), 
-    getGeomV(bottomvec[3]), getGeomV(topvec[0]), getGeomV(topvec[3]), getGeomV(topvec[2]), getGeomV(topvec[1])};
-    auto _geomch = m_mesh.add_cell(cell_vertices);
+    */
+    //std::vector<VertexHandle> cell_vertices{geomvertices), end(geomvertices)};
+    auto _geomch = m_mesh.add_cell(geomvertices);
     m_tm2m_mapping[_ch] = _geomch;
     m_m2tm_mapping[_geomch] = _ch;
 
@@ -184,7 +210,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     #endif
     
     std::vector<VertexHandle> bottomvec(m_topomesh.halfface_vertices(_nbhf_vec[0]).first, m_topomesh.halfface_vertices(_nbhf_vec[0]).second);
-    std::vector<VertexHandle> topvec = opposite_vertex_in_cell(m_topomesh, _ch, _nbhf_vec[0], bottomvec);
+    std::vector<VertexHandle> topvec;// = opposite_vertex_in_cell(m_topomesh, _ch, _nbhf_vec[0], bottomvec);
     #ifndef NDEBUG
         assert(topvec.size()==4);
     #endif
@@ -196,7 +222,10 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
         auto p3_mid = cross(m_mesh.vertex(p1)-m_mesh.vertex(p0), m_mesh.vertex(p2)-m_mesh.vertex(p1));
         p3_mid.normalize_cond();
         p3_mid -= m_mesh.vertex(p1);
-        m_mesh.set_vertex(getGeomV(topvec[i]), p3_mid);
+        auto geomvhandle = m_mesh.add_vertex(p3_mid);
+        m_m2tm_v_mapping[geomvhandle] = topvec[i];
+        m_tm2m_v_mapping[topvec[i]] = geomvhandle;
+        //m_mesh.set_vertex(getGeomV(topvec[i]), p3_mid);
     }
     std::vector<VertexHandle> cell_vertices{getGeomV(bottomvec[0]), getGeomV(bottomvec[1]), getGeomV(bottomvec[2]), 
     getGeomV(bottomvec[3]), getGeomV(topvec[0]), getGeomV(topvec[3]), getGeomV(topvec[2]), getGeomV(topvec[1])};
@@ -289,11 +318,17 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     auto s1_mid = m_mesh.vertex(p1)+m_mesh.vertex(p2)-2*m_mesh.vertex(p0);
     s1_mid.normalize_cond();
     s1_mid -= m_mesh.vertex(p0);
-    m_mesh.set_vertex(getGeomV(s1), s1_mid);
+    auto geoms1 = m_mesh.add_vertex(s1_mid);
+    m_tm2m_v_mapping[s1] = geoms1;
+    m_m2tm_v_mapping[geoms1] = s1;
+    //m_mesh.set_vertex(getGeomV(s1), s1_mid);
     auto s2_mid = m_mesh.vertex(p4)+m_mesh.vertex(p5)-2*m_mesh.vertex(p3);
     s2_mid.normalize_cond();
     s2_mid -= m_mesh.vertex(p3);
-    m_mesh.set_vertex(getGeomV(s2), s2_mid);
+    auto geoms2 = m_mesh.add_vertex(s2_mid);
+    m_tm2m_v_mapping[s2] = geoms2;
+    m_m2tm_v_mapping[geoms2] = s2;
+    //m_mesh.set_vertex(getGeomV(s2), s2_mid);
 
     std::vector<VertexHandle> cell_vertices{getGeomV(wing1[0]), getGeomV(wing1[1]), getGeomV(wing1[2]), 
     getGeomV(wing1[3]), getGeomV(wing2[2]), getGeomV(s1), getGeomV(s2), getGeomV(wing2[3])};
@@ -404,7 +439,10 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     auto s1_mid = (m_mesh.vertex(p11)+m_mesh.vertex(p12)-2*m_mesh.vertex(p10)).normalize_cond()-m_mesh.vertex(p10);
     auto s2_mid = (m_mesh.vertex(p21)+m_mesh.vertex(p22)-2*m_mesh.vertex(p20)).normalize_cond()-m_mesh.vertex(p20);
     auto s3_mid = (m_mesh.vertex(p31)+m_mesh.vertex(p32)-2*m_mesh.vertex(p30)).normalize_cond()-m_mesh.vertex(p30);
-    m_mesh.set_vertex(getGeomV(jade), (s1_mid+s2_mid+s3_mid)/3);
+    auto geomjade = m_mesh.add_vertex((s1_mid+s2_mid+s3_mid)/3);
+    m_m2tm_v_mapping[jade] = geomjade;
+    m_tm2m_v_mapping[geomjade] = jade;
+    //m_mesh.set_vertex(getGeomV(jade), (s1_mid+s2_mid+s3_mid)/3);
 
     auto _fan1_top = opposite_vertex_in_cell(m_topomesh, _ch, _nbhf_vec[0], fan1);
 
