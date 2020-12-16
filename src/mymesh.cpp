@@ -70,12 +70,8 @@ bool MyMesh::GenerateOrder() {
 }
 
 bool MyMesh::WriteGeomToVTKFile(const std::string &filename) {
-    auto m = MsqOperator::Instance().Ovm2Msq(m_mesh);
-    Mesquite::MsqError err;
-    m.write_vtk(filename.c_str(), err);
-    if (!err)
-        return true;
-    return false;
+    MsqOperator::Instance().Ovm2MsqOut(m_mesh, filename);
+    return true;
 }
 
 bool MyMesh::GenerateOneCell(const OpenVolumeMesh::CellHandle &_ch) {

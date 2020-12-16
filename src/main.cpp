@@ -10,7 +10,8 @@ int main() {
     mesh.GenerateOrder();
     for (int i=0; i<mesh.GetTopoCnum(); ++i) {
         mesh.GenerateOneCell(mesh.GetCurrentCellHandle());
-        mesh.WriteGeomToVTKFile(ofilename+"./src"+std::to_string(i)+".vtk");
+        mesh.Optimize();
+        mesh.WriteGeomToVTKFile(ofilename+"./src/"+std::to_string(i)+".vtk");
     }
     mesh.WriteGeomToVTKFile(ofilename);
     return 0;

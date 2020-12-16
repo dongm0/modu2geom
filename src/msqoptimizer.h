@@ -10,7 +10,7 @@ public:
         static MsqOperator m_instance;
         return m_instance;
     }
-    Mesquite::MeshImpl Ovm2Msq(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm);
+    void Ovm2MsqOut(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, std::string outname);
     void Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm);
     void Msq2Ovm(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, MeshImpl &mesh);
 private:
