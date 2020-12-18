@@ -69,7 +69,9 @@ void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, st
     using namespace Eigen;
     using namespace OpenVolumeMesh;
     Matrix<double, Dynamic, Dynamic> V;
+    V.resize(_ovm.n_vertices(), 3);
     Matrix<int, Dynamic, Dynamic> T;
+    T.resize(_ovm.n_cells()*8, 4);
     Matrix<int, 1, 1> b;
     Matrix<double, 1, 1> bc;
     std::map<VertexHandle, int> mapping;

@@ -52,13 +52,16 @@ bool MyMesh::ReadTopoFromFile(const std::string &filename) {
         for (uint8_t j=0; j<8; ++j) {
             _cell[j] = (m_topo_vertices.at(m_cells.at(i).at(j)));
         }
-        std::swap(_cell[5], _cell[7]);
+        std::swap(_cell[1], _cell[3]);
         #ifdef OVM_TOPOLOGY_CHECK
             m_topomesh.add_cell(_cell, true);
         #else
             m_topomesh.add_cell(_cell, true);//false
         #endif
     }
+    //auto c0 = m_topomesh.cells_begin();
+    //auto _range = m_topomesh.halfface_vertices(m_topomesh.xfront_halfface(*c0));
+    //std::vector<VertexHandle> b(_range.first, _range.second);
     return true;
 }
 
@@ -150,7 +153,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
         assert(_nbc_vec.size()==0 && _nbhf_vec.size()==0);
     #endif
     using namespace OpenVolumeMesh;
-    auto bottomface = m_topomesh.zback_halfface(_ch);
+    auto bottomface = m_topomesh.xfront_halfface(_ch);
     auto b_range = m_topomesh.halfface_vertices(bottomface);
     std::vector<VertexHandle> bottomvec(b_range.first, b_range.second);
     std::vector<VertexHandle> topvec = opposite_vertex_in_cell(m_topomesh, _ch, bottomface, bottomvec);
@@ -194,6 +197,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     m_mesh.set_vertex(getGeomV(topvec[3]), Vec3d(0, 1, 1));
     */
     //std::vector<VertexHandle> cell_vertices{geomvertices), end(geomvertices)};
+    std::swap(geomvertices[1], geomvertices[3]);
     auto _geomch = m_mesh.add_cell(geomvertices);
     m_tm2m_mapping[_ch] = _geomch;
     m_m2tm_mapping[_geomch] = _ch;
@@ -210,25 +214,28 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     #endif
     
     std::vector<VertexHandle> bottomvec(m_topomesh.halfface_vertices(_nbhf_vec[0]).first, m_topomesh.halfface_vertices(_nbhf_vec[0]).second);
-    std::vector<VertexHandle> topvec;// = opposite_vertex_in_cell(m_topomesh, _ch, _nbhf_vec[0], bottomvec);
-    #ifndef NDEBUG
-        assert(topvec.size()==4);
-    #endif
+    std::vector<VertexHandle> topvec = opposite_vertex_in_cell(m_topomesh, _ch, _nbhf_vec[0], bottomvec);
+    //#ifndef NDEBUG
+    //    assert(topvec.size()==4);
+    //#endif
 
     for (int i=0; i<4; ++i) {
         VertexHandle p0 = getGeomV(bottomvec[(i+3)%4]);
         VertexHandle p1 = getGeomV(bottomvec[i]);
         VertexHandle p2 = getGeomV(bottomvec[(i+1)%4]);
+        auto test_p0_coord = m_mesh.vertex(p0);
+        auto test_p1_coord = m_mesh.vertex(p1);
+        auto test_p2_coord = m_mesh.vertex(p2);
         auto p3_mid = cross(m_mesh.vertex(p1)-m_mesh.vertex(p0), m_mesh.vertex(p2)-m_mesh.vertex(p1));
         p3_mid.normalize_cond();
-        p3_mid -= m_mesh.vertex(p1);
+        p3_mid += m_mesh.vertex(p1);
         auto geomvhandle = m_mesh.add_vertex(p3_mid);
         m_m2tm_v_mapping[geomvhandle] = topvec[i];
         m_tm2m_v_mapping[topvec[i]] = geomvhandle;
         //m_mesh.set_vertex(getGeomV(topvec[i]), p3_mid);
     }
-    std::vector<VertexHandle> cell_vertices{getGeomV(bottomvec[0]), getGeomV(bottomvec[1]), getGeomV(bottomvec[2]), 
-    getGeomV(bottomvec[3]), getGeomV(topvec[0]), getGeomV(topvec[3]), getGeomV(topvec[2]), getGeomV(topvec[1])};
+    std::vector<VertexHandle> cell_vertices{getGeomV(bottomvec[0]), getGeomV(bottomvec[3]), getGeomV(bottomvec[2]), 
+    getGeomV(bottomvec[1]), getGeomV(topvec[0]), getGeomV(topvec[1]), getGeomV(topvec[2]), getGeomV(topvec[3])};
     auto _geomch = m_mesh.add_cell(cell_vertices);
     m_tm2m_mapping[_ch] = _geomch;
     m_m2tm_mapping[_geomch] = _ch;
@@ -288,6 +295,10 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
             normdir = normdir - ((bottoml|normdir)/bottoml.length())*(bottoml/bottoml.length());
             wing1dir = (normdir|bottoml)*bottoml + bottoml%normdir;
             wing2dir = -1*wing1dir;
+            normdir.normalize_cond();
+            wing1dir.normalize_cond();
+            wing2dir.normalize_cond();
+            bottoml.normalize_cond();
         }
         //wing的位置调节
         std::map<VertexHandle, Vec3d> fixed;
@@ -330,8 +341,8 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     m_m2tm_v_mapping[geoms2] = s2;
     //m_mesh.set_vertex(getGeomV(s2), s2_mid);
 
-    std::vector<VertexHandle> cell_vertices{getGeomV(wing1[0]), getGeomV(wing1[1]), getGeomV(wing1[2]), 
-    getGeomV(wing1[3]), getGeomV(wing2[2]), getGeomV(s1), getGeomV(s2), getGeomV(wing2[3])};
+    std::vector<VertexHandle> cell_vertices{getGeomV(wing1[0]), getGeomV(wing1[3]), getGeomV(wing1[2]), 
+    getGeomV(wing1[1]), getGeomV(wing2[2]), getGeomV(wing2[3]), getGeomV(s1), getGeomV(s2)};
     auto _geomch = m_mesh.add_cell(cell_vertices);
     m_tm2m_mapping[_ch] = _geomch;
     m_m2tm_mapping[_geomch] = _ch;
@@ -446,8 +457,8 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
 
     auto _fan1_top = opposite_vertex_in_cell(m_topomesh, _ch, _nbhf_vec[0], fan1);
 
-    std::vector<VertexHandle> cell_vertices{getGeomV(fan1[0]), getGeomV(fan1[1]), getGeomV(fan1[2]), 
-    getGeomV(fan1[3]), getGeomV(_fan1_top[0]), getGeomV(_fan1_top[3]), getGeomV(_fan1_top[2]), getGeomV(_fan1_top[1])};
+    std::vector<VertexHandle> cell_vertices{getGeomV(fan1[0]), getGeomV(fan1[3]), getGeomV(fan1[2]), 
+    getGeomV(fan1[1]), getGeomV(_fan1_top[0]), getGeomV(_fan1_top[1]), getGeomV(_fan1_top[2]), getGeomV(_fan1_top[3])};
     auto _geomch = m_mesh.add_cell(cell_vertices);
     m_tm2m_mapping[_ch] = _geomch;
     m_m2tm_mapping[_geomch] = _ch;
@@ -550,8 +561,8 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     }
 
     //end
-    std::vector<VertexHandle> cell_vertices{getGeomV(bottom_vec[0]), getGeomV(bottom_vec[1]), getGeomV(bottom_vec[2]), 
-    getGeomV(bottom_vec[3]), getGeomV(wing1[2]), getGeomV(wing2[3]), getGeomV(wing2[2]), getGeomV(wing1[1])};
+    std::vector<VertexHandle> cell_vertices{getGeomV(bottom_vec[0]), getGeomV(bottom_vec[3]), getGeomV(bottom_vec[2]), 
+    getGeomV(bottom_vec[1]), getGeomV(wing1[2]), getGeomV(wing1[3]), getGeomV(wing2[2]), getGeomV(wing2[3])};
     auto _geomch = m_mesh.add_cell(cell_vertices);
     m_tm2m_mapping[_ch] = _geomch;
     m_m2tm_mapping[_geomch] = _ch;
@@ -679,8 +690,8 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
         }
     }
     //end
-    std::vector<VertexHandle> cell_vertices{getGeomV(bottom1[0]), getGeomV(bottom1[1]), getGeomV(bottom1[2]), 
-    getGeomV(bottom1[3]), getGeomV(bottom2[2]), getGeomV(side2[3]), getGeomV(side1[3]), getGeomV(side1[2])};
+    std::vector<VertexHandle> cell_vertices{getGeomV(bottom1[0]), getGeomV(bottom1[3]), getGeomV(bottom1[2]), 
+    getGeomV(bottom1[1]), getGeomV(bottom2[2]), getGeomV(bottom2[3]), getGeomV(side1[3]), getGeomV(side2[3])};
     auto _geomch = m_mesh.add_cell(cell_vertices);
     m_tm2m_mapping[_ch] = _geomch;
     m_m2tm_mapping[_geomch] = _ch;
@@ -765,8 +776,8 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     }
 
     //end
-    std::vector<VertexHandle> cell_vertices{getGeomV(bottom_vec[0]), getGeomV(bottom_vec[1]), getGeomV(bottom_vec[2]), 
-    getGeomV(bottom_vec[3]), getGeomV(wings[0][2]), getGeomV(wings[3][2]), getGeomV(wings[2][2]), getGeomV(wings[1][2])};
+    std::vector<VertexHandle> cell_vertices{getGeomV(bottom_vec[0]), getGeomV(bottom_vec[3]), getGeomV(bottom_vec[2]), 
+    getGeomV(bottom_vec[1]), getGeomV(wings[0][2]), getGeomV(wings[1][2]), getGeomV(wings[2][2]), getGeomV(wings[3][2])};
     auto _geomch = m_mesh.add_cell(cell_vertices);
     m_tm2m_mapping[_ch] = _geomch;
     m_m2tm_mapping[_geomch] = _ch;
@@ -783,7 +794,7 @@ std::vector<std::vector<OpenVolumeMesh::Vec3d>> MyMesh::untangleBottomFace(const
     std::vector<std::vector<Vec3d>> _res;
     for (int i=0; i<fsize; ++i) {
         std::vector<Vec3d> _res1c;
-        for (int j=0; j<uData[i].vertices.size(); ++i) {
+        for (int j=0; j<uData[i].vertices.size(); ++j) {
             Vec3d corner = uData.at(i).vertices.at(j) - uData.at(i).assistV_d;
             corner = corner - ((corner|uData.at(i).bline_d)/uData.at(i).bline_d.length())*(uData.at(i).bline_d/uData.at(i).bline_d.length());
             Vec3d base = uData.at(i).vertices.at(j) - corner;
