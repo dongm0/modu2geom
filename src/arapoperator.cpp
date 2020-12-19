@@ -30,7 +30,8 @@ void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, st
         }
 
         V.resize(surface_vnum, 3);
-        F.resize(surface_hf.size()*2, 3);
+        F.resize(surface_hf.size()*2,
+         3);
 
         for (int i=0; i<surface_vnum; ++i) {
             auto coord = vertices.at(i);
@@ -59,9 +60,10 @@ void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, st
 
 const int hex2tet[32] = {0, 1, 3, 4, 
                          1, 2, 0, 5, 
-                         2, 3, 6, 1, 
+                         2, 3, 1, 6, 
                          3, 0, 2, 7, 
                          4, 7, 5, 0, 
+                         7, 6, 4, 3,
                          6, 5, 7, 2, 
                          5, 4, 6, 1};
 
@@ -97,17 +99,17 @@ void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, st
         ++i;
     }
     auto V0 = V;
+    /*
     V0.resize(V.rows(), V.cols());
     for (int k=0; k<b.size(); ++k) {
         V0(b(k), 0) = bc(k, 0);
         V0(b(k), 1) = bc(k, 1);
         V0(b(k), 2) = bc(k, 2);
     }
-    std::vector<int> b_tmp;
-    std::vector<std::vector<double>> bc_tmp;
-    for (int bn=0; bn<b.size(); ++bn) {
-        b_tmp.push_back(b(bn));
-        bc_tmp.push_back({bc(bn, 0), bc(bn, 1), bc(bn, 2)});
+    */
+    std::vector<std::vector<double>> V_tmp;
+    for (int vn=0; vn<V.rows(); ++vn) {
+        V_tmp.push_back({V(vn, 0), V(vn, 1), V(vn, 2)});
     }
     std::vector<VertexHandle> inmapping(mapping.size());
     for (auto x : mapping) {
@@ -159,15 +161,23 @@ void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, st
         }
         cnumber++;
     }
+    std::vector<std::vector<int>> T_tmp;
+    for (int cn=0; cn<T.rows(); ++cn) {
+        T_tmp.push_back({T(cn, 0), T(cn, 1), T(cn, 2), T(cn, 3)});
+    }
     //slim
     igl::SLIMData sData;
     igl::slim_precompute(V, T, V0, sData, igl::MappingEnergyType::SYMMETRIC_DIRICHLET, b, bc, 1e6);
-    V = igl::slim_solve(sData, 3);
+    igl::slim_solve(sData, 3);
+    std::vector<std::vector<double>> V1_tmp;
+    for (int vn=0; vn<V.rows(); ++vn) {
+        V1_tmp.push_back({sData.V_o(vn, 0), sData.V_o(vn, 1), sData.V_o(vn, 2)});
+    }
 
     //slim完了
     
     for (int i=0; i<mapping.size(); ++i) {
-        _ovm.set_vertex(inmapping[i], Vec3d(V(i, 0), V(i, 1), V(i, 2)));
+        _ovm.set_vertex(inmapping[i], Vec3d(sData.V_o(i, 0), sData.V_o(i, 1), sData.V_o(i, 2)));
     }
 
     

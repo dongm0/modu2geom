@@ -141,16 +141,21 @@ void MsqOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm) {
     TQualityMetric metric_0(&target, &m2);
     ElementPMeanP metric(1.0, &metric_0);
     PMeanPTemplate obj_func_opt(1.0, &metric);
-    ConjugateGradient improver(&obj_func_opt);;
+    QuasiNewton improver(&obj_func_opt);;
     improver.use_global_patch();
     //improver.set_inner_termination_criterion(&e);
     InstructionQueue queue;
     queue.set_master_quality_improver(&improver, err);
     queue.run_instructions(&msqmesh, err);
 
+    std::vector<Mesh::ElementHandle> vertices;
+    std::vector<MsqVertex> coordinates;
+    msqmesh.get_all_vertices(vertices, err);
+    coordinates.resize(vertices.size());
+    msqmesh.vertices_get_coordinates(vertices.data(), coordinates.data(), coordinates.size(), err);
     i = 0;
     for (auto v_it = _ovm.vertices_begin(); v_it!=_ovm.vertices_end(); ++v_it) {
-        _ovm.set_vertex(*v_it, OpenVolumeMesh::Geometry::Vec3d(coords[i*3], coords[i*3+1], coords[i*3+2]));
+        _ovm.set_vertex(*v_it, OpenVolumeMesh::Geometry::Vec3d(coordinates[i].x(), coordinates[i].y(), coordinates[i].z()));
         ++i;
     }
     delete[] fixed;
