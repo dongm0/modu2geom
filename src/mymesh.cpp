@@ -329,21 +329,21 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     VertexHandle p3 = getGeomV(wing2[0]), p4 = getGeomV(wing2[3]), p5 = getGeomV(wing1[2]);
     auto s1_mid = m_mesh.vertex(p1)+m_mesh.vertex(p2)-2*m_mesh.vertex(p0);
     s1_mid.normalize_cond();
-    s1_mid -= m_mesh.vertex(p0);
+    s1_mid += m_mesh.vertex(p0);
     auto geoms1 = m_mesh.add_vertex(s1_mid);
     m_tm2m_v_mapping[s1] = geoms1;
     m_m2tm_v_mapping[geoms1] = s1;
     //m_mesh.set_vertex(getGeomV(s1), s1_mid);
     auto s2_mid = m_mesh.vertex(p4)+m_mesh.vertex(p5)-2*m_mesh.vertex(p3);
     s2_mid.normalize_cond();
-    s2_mid -= m_mesh.vertex(p3);
+    s2_mid += m_mesh.vertex(p3);
     auto geoms2 = m_mesh.add_vertex(s2_mid);
     m_tm2m_v_mapping[s2] = geoms2;
     m_m2tm_v_mapping[geoms2] = s2;
     //m_mesh.set_vertex(getGeomV(s2), s2_mid);
 
     std::vector<VertexHandle> cell_vertices{getGeomV(wing1[0]), getGeomV(wing1[3]), getGeomV(wing1[2]), 
-    getGeomV(wing1[1]), getGeomV(wing2[2]), getGeomV(wing2[3]), getGeomV(s1), getGeomV(s2)};
+    getGeomV(wing1[1]), getGeomV(wing2[2]), getGeomV(wing2[3]), getGeomV(s2), getGeomV(s1)};
     auto _geomch = m_mesh.add_cell(cell_vertices);
     m_tm2m_mapping[_ch] = _geomch;
     m_m2tm_mapping[_geomch] = _ch;
@@ -451,6 +451,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     auto s1_mid = (m_mesh.vertex(p11)+m_mesh.vertex(p12)-2*m_mesh.vertex(p10)).normalize_cond()-m_mesh.vertex(p10);
     auto s2_mid = (m_mesh.vertex(p21)+m_mesh.vertex(p22)-2*m_mesh.vertex(p20)).normalize_cond()-m_mesh.vertex(p20);
     auto s3_mid = (m_mesh.vertex(p31)+m_mesh.vertex(p32)-2*m_mesh.vertex(p30)).normalize_cond()-m_mesh.vertex(p30);
+    auto jade_coord = (s1_mid+s2_mid+s3_mid)/3 + m_mesh.vertex((fan1[0]));
     auto geomjade = m_mesh.add_vertex((s1_mid+s2_mid+s3_mid)/3);
     m_m2tm_v_mapping[jade] = geomjade;
     m_tm2m_v_mapping[geomjade] = jade;
@@ -807,12 +808,12 @@ std::vector<std::vector<OpenVolumeMesh::Vec3d>> MyMesh::untangleBottomFace(const
                 double theta = my_pi/6 - alpha;
                 if (theta < 0) theta += 2*my_pi;
                 corner = cos(theta)*corner + (1-cos(theta))*(corner|uData.at(i).bline_d)*uData.at(i).bline_d - 
-                         sin(theta)*uData.at(i).bline_d*corner;
+                         sin(theta)*(uData.at(i).bline_d%corner);
             }
             else if (alpha>(my_pi/3) and alpha<=(5*my_pi/4)) {
                 double theta = alpha - my_pi/3;
                 corner = cos(theta)*corner + (1-cos(theta))*(corner|uData.at(i).bline_d)*uData.at(i).bline_d + 
-                         sin(theta)*uData.at(i).bline_d*corner;
+                         sin(theta)*(uData.at(i).bline_d%corner);
             }
 
             _res1c.push_back(base + corner);

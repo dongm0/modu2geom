@@ -103,6 +103,12 @@ void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, st
         V0(b(k), 1) = bc(k, 1);
         V0(b(k), 2) = bc(k, 2);
     }
+    std::vector<int> b_tmp;
+    std::vector<std::vector<double>> bc_tmp;
+    for (int bn=0; bn<b.size(); ++bn) {
+        b_tmp.push_back(b(bn));
+        bc_tmp.push_back({bc(bn, 0), bc(bn, 1), bc(bn, 2)});
+    }
     std::vector<VertexHandle> inmapping(mapping.size());
     for (auto x : mapping) {
         inmapping[x.second] = x.first;
@@ -156,7 +162,7 @@ void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, st
     //slim
     igl::SLIMData sData;
     igl::slim_precompute(V, T, V0, sData, igl::MappingEnergyType::SYMMETRIC_DIRICHLET, b, bc, 1e6);
-    igl::slim_solve(sData, 1);
+    V = igl::slim_solve(sData, 3);
 
     //slim完了
     
