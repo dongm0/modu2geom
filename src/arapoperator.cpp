@@ -72,8 +72,11 @@ void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, st
     V.resize(_ovm.n_vertices(), 3);
     Matrix<int, Dynamic, Dynamic> T;
     T.resize(_ovm.n_cells()*8, 4);
-    Matrix<int, 1, 1> b;
-    Matrix<double, 1, 1> bc;
+    //Matrix<int, 1, 1> b;
+    VectorXi b;
+    b.resize(fixed.size());
+    Matrix<double, Dynamic, Dynamic> bc;
+    bc.resize(fixed.size(), 3);
     std::map<VertexHandle, int> mapping;
     int i=0;
     int j=0;
@@ -88,17 +91,23 @@ void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, st
             bc(j, 0) = fixed[*_vh][0];
             bc(j, 1) = fixed[*_vh][1];
             bc(j, 2) = fixed[*_vh][2];
+            j++;
         }
         mapping[*_vh] = i;
         ++i;
     }
     auto V0 = V;
+    V0.resize(V.rows(), V.cols());
     for (int k=0; k<b.size(); ++k) {
         V0(b(k), 0) = bc(k, 0);
         V0(b(k), 1) = bc(k, 1);
         V0(b(k), 2) = bc(k, 2);
     }
-    i=0;
+    std::vector<VertexHandle> inmapping(mapping.size());
+    for (auto x : mapping) {
+        inmapping[x.second] = x.first;
+    }
+    int cnumber=0;
     for (auto _ch = _ovm.cells_begin(); _ch != _ovm.cells_end(); ++_ch) {
         auto _xb = _ovm.xback_halfface(*_ch);
         auto _xf = _ovm.xfront_halfface(*_ch);
@@ -106,13 +115,25 @@ void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, st
         auto _xf_range = _ovm.halfface_vertices(_xf);
         std::vector<int> _cell_number;
         std::vector<int> _xf_number;
+        std::set<int> _xf_set;
         for (auto _vh = _xb_range.first; _vh != _xb_range.second; ++_vh) {
             _cell_number.push_back(mapping[*_vh]);
         }
         int _cnt = 0;
         for (auto _vh = _xf_range.first; _vh != _xf_range.second; ++_vh) {
             _xf_number.push_back(mapping[*_vh]);
+            _xf_set.insert(mapping[*_vh]);
         }
+        for (j=0; j<4; ++j) {
+            auto _vh1 = inmapping[_cell_number[j]];
+            for (auto vv : _ovm.vertex_vertices(_vh1)) {
+                if (_xf_set.count(mapping[vv]) != 0) {
+                    _cell_number.push_back(mapping[vv]);
+                    break;
+                }
+            }
+        }
+        /*
         for (auto _vh = _ovm.vv_iter(*_xb_range.first); _vh.valid(); ++_vh) {
             for (int ii=0; ii<4; ++ii) {
                 if (mapping[*_vh] == _xf_number[ii]) {
@@ -124,11 +145,13 @@ void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, st
             }
             if (_cell_number.size() > 4) break;
         }
+        */
         for (int j=0; j<8; ++j) {
             for (int k=0; k<4; ++k) {
-                T(i*8+j, k) = _cell_number[hex2tet[j*4+k]];
+                T(cnumber*8+j, k) = _cell_number[hex2tet[j*4+k]];
             }
         }
+        cnumber++;
     }
     //slim
     igl::SLIMData sData;
@@ -136,10 +159,7 @@ void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, st
     igl::slim_solve(sData, 1);
 
     //slim完了
-    std::vector<VertexHandle> inmapping(mapping.size());
-    for (auto x : mapping) {
-        inmapping[x.second] = x.first;
-    }
+    
     for (int i=0; i<mapping.size(); ++i) {
         _ovm.set_vertex(inmapping[i], Vec3d(V(i, 0), V(i, 1), V(i, 2)));
     }

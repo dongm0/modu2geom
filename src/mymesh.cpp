@@ -322,6 +322,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
         {
             ArapOperator::Instance().Optimize(m_mesh, fixed);
         }
+        WriteGeomToVTKFile("tmp.vtk");
     }
     //end
     VertexHandle p0 = getGeomV(wing1[0]), p1 = getGeomV(wing1[3]), p2 = getGeomV(wing2[2]);
