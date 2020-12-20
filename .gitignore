@@ -33,3 +33,10 @@
 
 # vscode project files
 .vscode/
+
+# bin
+./src/modupaint
+
+# vtk
+./src/*.vtk
+*.vtk
