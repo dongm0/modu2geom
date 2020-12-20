@@ -35,7 +35,7 @@
 .vscode/
 
 # bin
-./src/modupaint
+./src/modu2paint
 
 # vtk
 ./src/*.vtk
