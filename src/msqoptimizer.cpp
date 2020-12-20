@@ -72,7 +72,7 @@ void MsqOperator::Ovm2MsqOut(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, s
         connection.push_back(v_idx[_xf_vertices[3]]);
     }
     //std::shared_ptr<bool> fixed = std::make_shared(new bool(_ovm.n_vertices()));
-    bool *fixed = new bool(_ovm.n_vertices());
+    bool *fixed = new bool[_ovm.n_vertices()];
     for (int i=0; i<_ovm.n_vertices(); ++i) {
         fixed[i] = 0;
     }
@@ -121,27 +121,34 @@ void MsqOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm) {
         connection.push_back(v_idx[_xf_vertices[2]]);
         connection.push_back(v_idx[_xf_vertices[3]]);
     }
-    bool *fixed = new bool(_ovm.n_vertices());
+    bool *fixed = new bool[_ovm.n_vertices()];
     for (int i=0; i<_ovm.n_vertices(); ++i) {
         if (i<=1) fixed[i] = 1;
         else fixed[i] = 0;
     }    
-    
+    int _test_cnum = _ovm.n_cells(); 
     //ArrayMesh msqmesh(3, _ovm.n_vertices(), coords.data(), fixedflag.data(), _ovm.n_cells(), HEXAHEDRON, connection.data());
     MeshImpl msqmesh((int)_ovm.n_vertices(), (int)_ovm.n_cells(), HEXAHEDRON, fixed, coords.data(), connection.data());
     //auto msqmesh = OVMmesh2MSQmesh(_ovm);
 
 
     MsqError err;
+
+    QualityAssessor qa(false, false);
+    InstructionQueue inv_dect;
+    inv_dect.add_quality_assessor(&qa, err);
+    inv_dect.run_instructions(&msqmesh, err);
+    int inv_ele = 0, inv_sam = 0;
+    qa.get_inverted_element_count(inv_ele, inv_sam, err);
     
     IdealShapeTarget target;
     //TShapeSizeB1 m1;
     TShapeSizeB3 m2;
     //TSum mymetric(&m1, &m2);
     TQualityMetric metric_0(&target, &m2);
-    ElementPMeanP metric(1.0, &metric_0);
+    ElementPMeanP metric(2.0, &metric_0);
     PMeanPTemplate obj_func_opt(1.0, &metric);
-    QuasiNewton improver(&obj_func_opt);;
+    ConjugateGradient improver(&obj_func_opt);;
     improver.use_global_patch();
     //improver.set_inner_termination_criterion(&e);
     InstructionQueue queue;

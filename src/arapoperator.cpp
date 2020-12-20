@@ -168,7 +168,7 @@ void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, st
     //slim
     igl::SLIMData sData;
     igl::slim_precompute(V, T, V0, sData, igl::MappingEnergyType::SYMMETRIC_DIRICHLET, b, bc, 1e6);
-    igl::slim_solve(sData, 3);
+    igl::slim_solve(sData, 5);
     std::vector<std::vector<double>> V1_tmp;
     for (int vn=0; vn<V.rows(); ++vn) {
         V1_tmp.push_back({sData.V_o(vn, 0), sData.V_o(vn, 1), sData.V_o(vn, 2)});
