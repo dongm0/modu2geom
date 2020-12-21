@@ -11,6 +11,7 @@ public:
         return m_instance;
     }
     void Ovm2MsqOut(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, std::string outname);
+    void Ovm2MsqOut(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, std::vector<OpenVolumeMesh::VertexHandle> &_tagged, std::string outname);
     void Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm);
     void Msq2Ovm(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, MeshImpl &mesh);
 private:

@@ -20,6 +20,7 @@ public:
     //可以用>>操作符
     bool ReadTopoFromFile(const std::string &filename);
     bool WriteGeomToVTKFile(const std::string &filename);
+    bool WriteGeomToVTKFile(const std::string &filename, std::vector<OpenVolumeMesh::VertexHandle> &_tagged);
     bool GenerateOrder();
     bool GenerateOneCell(const OpenVolumeMesh::CellHandle &_ch);
 

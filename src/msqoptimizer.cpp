@@ -37,7 +37,7 @@ std::vector<OpenVolumeMesh::VertexHandle> opposite_vertex_in_cell1(const OpenVol
 
 
 void MsqOperator::Ovm2MsqOut(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, std::string outname) {
-        std::vector<double> coords;
+    std::vector<double> coords;
     std::map<OpenVolumeMesh::VertexHandle, int> v_idx;
     int i=0;
     for (auto v_it = _ovm.vertices_begin(); v_it!=_ovm.vertices_end(); ++v_it) {
@@ -75,6 +75,58 @@ void MsqOperator::Ovm2MsqOut(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, s
     bool *fixed = new bool[_ovm.n_vertices()];
     for (int i=0; i<_ovm.n_vertices(); ++i) {
         fixed[i] = 0;
+    }
+    
+    //ArrayMesh msqmesh(3, _ovm.n_vertices(), coords.data(), fixedflag.data(), _ovm.n_cells(), HEXAHEDRON, connection.data());
+    MeshImpl msqmesh((int)_ovm.n_vertices(), (int)_ovm.n_cells(), HEXAHEDRON, fixed, coords.data(), connection.data());
+    MsqError err;
+    msqmesh.write_vtk(outname.c_str(), err);
+    //msqmesh.clear();
+    delete[] fixed;
+}
+
+void MsqOperator::Ovm2MsqOut(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm, std::vector<OpenVolumeMesh::VertexHandle> &_tagged, std::string outname) {
+    std::vector<double> coords;
+    std::map<OpenVolumeMesh::VertexHandle, int> v_idx;
+    int i=0;
+    for (auto v_it = _ovm.vertices_begin(); v_it!=_ovm.vertices_end(); ++v_it) {
+        auto c = _ovm.vertex(*v_it);
+        v_idx[*v_it] = i++;
+        coords.push_back(c[0]);
+        coords.push_back(c[1]);
+        coords.push_back(c[2]);
+    }
+    //std::vector<bool> fixedflag;
+    std::vector<int> connection;
+    std::vector<OpenVolumeMesh::VertexHandle> _xb_vertices(4);
+    std::vector<OpenVolumeMesh::VertexHandle> _xf_vertices(4);
+    for (auto _ch : _ovm.cells()) {
+        auto xf = _ovm.xfront_halfface(_ch);
+        auto xb = _ovm.xback_halfface(_ch);
+        auto _xb_range = _ovm.halfface_vertices(xb);
+        auto _xf_range = _ovm.halfface_vertices(xf);
+        //_xb_vertices.clear();
+        int _num = 0;
+        for (auto _vh = _xb_range.first; _vh != _xb_range.second; ++_vh) {
+            _xb_vertices.at(_num++) = *_vh;
+        }
+        _xf_vertices = opposite_vertex_in_cell1(_ovm, _ch, xb, _xb_vertices);
+        connection.push_back(v_idx[_xb_vertices[0]]);
+        connection.push_back(v_idx[_xb_vertices[1]]);
+        connection.push_back(v_idx[_xb_vertices[2]]);
+        connection.push_back(v_idx[_xb_vertices[3]]);
+        connection.push_back(v_idx[_xf_vertices[0]]);
+        connection.push_back(v_idx[_xf_vertices[1]]);
+        connection.push_back(v_idx[_xf_vertices[2]]);
+        connection.push_back(v_idx[_xf_vertices[3]]);
+    }
+    //std::shared_ptr<bool> fixed = std::make_shared(new bool(_ovm.n_vertices()));
+    bool *fixed = new bool[_ovm.n_vertices()];
+    for (int i=0; i<_ovm.n_vertices(); ++i) {
+        fixed[i] = 0;
+    }
+    for (auto _vh : _tagged) {
+        fixed[v_idx[_vh]] = 1;
     }
     
     //ArrayMesh msqmesh(3, _ovm.n_vertices(), coords.data(), fixedflag.data(), _ovm.n_cells(), HEXAHEDRON, connection.data());

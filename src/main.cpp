@@ -1,7 +1,7 @@
 #include "utils.h"
 #include "mymesh.h"
 
-std::string ifilename("con18.txt");
+std::string ifilename("con17.txt");
 std::string ofilename("");
 
 int main() {

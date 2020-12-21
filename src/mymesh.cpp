@@ -76,6 +76,10 @@ bool MyMesh::WriteGeomToVTKFile(const std::string &filename) {
     MsqOperator::Instance().Ovm2MsqOut(m_mesh, filename);
     return true;
 }
+bool MyMesh::WriteGeomToVTKFile(const std::string &filename, std::vector<OpenVolumeMesh::VertexHandle> &_tagged) {
+    MsqOperator::Instance().Ovm2MsqOut(m_mesh, _tagged, filename);
+    return true;
+}
 
 bool MyMesh::GenerateOneCell(const OpenVolumeMesh::CellHandle &_ch) {
     using namespace OpenVolumeMesh;
@@ -442,6 +446,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
         {
             ArapOperator::Instance().Optimize(m_mesh, fixed);
         }
+        WriteGeomToVTKFile("tmp.vtk");
     }
 
     //end
@@ -560,6 +565,12 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
         {
             ArapOperator::Instance().Optimize(m_mesh, fixed);
         }
+        std::vector<VertexHandle> tagged;
+        for (auto x : fixed) {
+            tagged.push_back(x.first);
+        }
+        
+        WriteGeomToVTKFile("tmp.vtk", tagged);
     }
 
     //end
@@ -690,6 +701,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
         {
             ArapOperator::Instance().Optimize(m_mesh, fixed);
         }
+        WriteGeomToVTKFile("tmp.vtk");
     }
     //end
     std::vector<VertexHandle> cell_vertices{getGeomV(bottom1[0]), getGeomV(bottom1[3]), getGeomV(bottom1[2]), 
@@ -775,6 +787,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
         {
             ArapOperator::Instance().Optimize(m_mesh, fixed);
         }
+        WriteGeomToVTKFile("tmp.vtk");
     }
 
     //end
