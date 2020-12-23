@@ -200,7 +200,7 @@ void MsqOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm) {
     TQualityMetric metric_0(&target, &m2);
     ElementPMeanP metric(2.0, &metric_0);
     PMeanPTemplate obj_func_opt(1.0, &metric);
-    ConjugateGradient improver(&obj_func_opt);;
+    QuasiNewton improver(&obj_func_opt);;
     improver.use_global_patch();
     //improver.set_inner_termination_criterion(&e);
     InstructionQueue queue;
