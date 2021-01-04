@@ -195,7 +195,7 @@ void MsqOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm) {
     
     IdealShapeTarget target;
     //TShapeSizeB1 m1;
-    TShapeSizeB1 m2;
+    TShapeSizeB3 m2;
     //TSum mymetric(&m1, &m2);
     TQualityMetric metric_0(&target, &m2);
     ElementPMeanP metric(1.0, &metric_0);

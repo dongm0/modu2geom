@@ -353,7 +353,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     m_m2tm_v_mapping[geoms1] = s1;
     //m_mesh.set_vertex(getGeomV(s1), s1_mid);
     auto s2_mid = m_mesh.vertex(p4)+m_mesh.vertex(p5)-2*m_mesh.vertex(p3);
-    //if (s2_mid.length() < 1.f)
+    if (s2_mid.length() < 1.f)
         s2_mid.normalize_cond();
     s2_mid += m_mesh.vertex(p3);
     auto geoms2 = m_mesh.add_vertex(s2_mid);
