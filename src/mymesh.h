@@ -32,6 +32,7 @@ public:
     int GetGeomCnum() {return m_mesh.n_cells();}
 
     OpenVolumeMesh::CellHandle GetCurrentCellHandle() {return m_generate_order[m_cur_idx++];}
+    bool checkTopo();
 
 private:
 

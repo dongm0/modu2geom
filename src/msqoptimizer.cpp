@@ -195,10 +195,10 @@ void MsqOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm) {
     
     IdealShapeTarget target;
     //TShapeSizeB1 m1;
-    TShapeSizeB3 m2;
+    TShapeSizeB1 m2;
     //TSum mymetric(&m1, &m2);
     TQualityMetric metric_0(&target, &m2);
-    ElementPMeanP metric(2.0, &metric_0);
+    ElementPMeanP metric(1.0, &metric_0);
     PMeanPTemplate obj_func_opt(1.0, &metric);
     QuasiNewton improver(&obj_func_opt);;
     improver.use_global_patch();

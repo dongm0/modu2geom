@@ -15,7 +15,7 @@ bool MyMesh::ReadTopoFromFile(const std::string &filename) {
     using namespace OpenVolumeMesh;
     
     std::ifstream fin;
-    fin.open("./con171.txt");
+    fin.open("./con18.txt");
     if (fin.fail()) {
         return false;
     }
@@ -62,6 +62,19 @@ bool MyMesh::ReadTopoFromFile(const std::string &filename) {
     //auto c0 = m_topomesh.cells_begin();
     //auto _range = m_topomesh.halfface_vertices(m_topomesh.xfront_halfface(*c0));
     //std::vector<VertexHandle> b(_range.first, _range.second);
+    return true;
+}
+
+bool MyMesh::checkTopo() {
+    std::vector<int> tmp(10, 0);
+    for (auto e : m_topomesh.edges()) {
+        if (!m_topomesh.is_boundary(e)) {
+            tmp[m_topomesh.valence(e)] += 1;
+        }
+    }
+    for (auto x : tmp) 
+        std::cout << x << " ";
+    std::cout << std::endl;
     return true;
 }
 
@@ -332,14 +345,16 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     VertexHandle p0 = getGeomV(wing1[0]), p1 = getGeomV(wing1[3]), p2 = getGeomV(wing2[2]);
     VertexHandle p3 = getGeomV(wing2[0]), p4 = getGeomV(wing2[3]), p5 = getGeomV(wing1[2]);
     auto s1_mid = m_mesh.vertex(p1)+m_mesh.vertex(p2)-2*m_mesh.vertex(p0);
-    s1_mid.normalize_cond();
+    //if (s1_mid.length() < 1.f)
+        s1_mid.normalize_cond();
     s1_mid += m_mesh.vertex(p0);
     auto geoms1 = m_mesh.add_vertex(s1_mid);
     m_tm2m_v_mapping[s1] = geoms1;
     m_m2tm_v_mapping[geoms1] = s1;
     //m_mesh.set_vertex(getGeomV(s1), s1_mid);
     auto s2_mid = m_mesh.vertex(p4)+m_mesh.vertex(p5)-2*m_mesh.vertex(p3);
-    s2_mid.normalize_cond();
+    //if (s2_mid.length() < 1.f)
+        s2_mid.normalize_cond();
     s2_mid += m_mesh.vertex(p3);
     auto geoms2 = m_mesh.add_vertex(s2_mid);
     m_tm2m_v_mapping[s2] = geoms2;
