@@ -11,11 +11,20 @@
 #include <Mesquite_ConjugateGradient.hpp>
 */
 
+static OpenVolumeMesh::Vec3d projectVectoDirection(const OpenVolumeMesh::Vec3d &v, const OpenVolumeMesh::Vec3d &ref) {
+    auto ref_norm = ref.normalized();
+    return ref_norm*(v|ref_norm);
+}
+
+static OpenVolumeMesh::Vec3d projectVectoPlane(const OpenVolumeMesh::Vec3d &v, const OpenVolumeMesh::Vec3d &ref) {
+    return v - projectVectoDirection(v, ref);
+}
+
 bool MyMesh::ReadTopoFromFile(const std::string &filename) {
     using namespace OpenVolumeMesh;
     
     std::ifstream fin;
-    fin.open("./con18.txt");
+    fin.open("./con172.txt");
     if (fin.fail()) {
         return false;
     }
@@ -345,7 +354,8 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     VertexHandle p0 = getGeomV(wing1[0]), p1 = getGeomV(wing1[3]), p2 = getGeomV(wing2[2]);
     VertexHandle p3 = getGeomV(wing2[0]), p4 = getGeomV(wing2[3]), p5 = getGeomV(wing1[2]);
     auto s1_mid = m_mesh.vertex(p1)+m_mesh.vertex(p2)-2*m_mesh.vertex(p0);
-    //if (s1_mid.length() < 1.f)
+    s1_mid = projectVectoPlane(s1_mid, m_mesh.vertex(p0)-m_mesh.vertex(p3));
+    if (s1_mid.length() < 1.f)
         s1_mid.normalize_cond();
     s1_mid += m_mesh.vertex(p0);
     auto geoms1 = m_mesh.add_vertex(s1_mid);
@@ -353,6 +363,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     m_m2tm_v_mapping[geoms1] = s1;
     //m_mesh.set_vertex(getGeomV(s1), s1_mid);
     auto s2_mid = m_mesh.vertex(p4)+m_mesh.vertex(p5)-2*m_mesh.vertex(p3);
+    s2_mid = projectVectoPlane(s2_mid, m_mesh.vertex(p0)-m_mesh.vertex(p3));
     if (s2_mid.length() < 1.f)
         s2_mid.normalize_cond();
     s2_mid += m_mesh.vertex(p3);
