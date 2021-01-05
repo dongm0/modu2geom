@@ -1,18 +1,30 @@
 #include "utils.h"
 #include "mymesh.h"
 
-std::string ifilename("con17.txt");
+std::string filepath("/home/dm/github/modu2geom/");
+
+std::string ifilename("con18.txt");
 std::string ofilename("");
 
-int main() {
+int main(int argc, char **argv) {
+    #ifdef NDEBUG
+    if (argc != 2) {
+        std::cerr << "Usage: modu2geom <file>" << std::endl;
+        return 1;
+    }
+    #endif
     MyMesh mesh;
-    mesh.ReadTopoFromFile(ifilename);
+    #ifdef NDEBUG
+    mesh.ReadTopoFromFile(std::string(argv[1]));
+    #else
+    mesh.ReadTopoFromFile(filepath+ifilename);
+    #endif
     mesh.GenerateOrder();
     mesh.checkTopo();
     for (int i=0; i<mesh.GetTopoCnum(); ++i) {
         mesh.GenerateOneCell(mesh.GetCurrentCellHandle());
         mesh.Optimize();
-        mesh.WriteGeomToVTKFile(ofilename+"./src/"+std::to_string(i)+".vtk");
+        mesh.WriteGeomToVTKFile(filepath+ofilename+"src/"+std::to_string(i)+".vtk");
     }
     mesh.WriteGeomToVTKFile(ofilename);
     return 0;

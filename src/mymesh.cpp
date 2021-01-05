@@ -24,7 +24,7 @@ bool MyMesh::ReadTopoFromFile(const std::string &filename) {
     using namespace OpenVolumeMesh;
     
     std::ifstream fin;
-    fin.open("./con172.txt");
+    fin.open(filename);
     if (fin.fail()) {
         return false;
     }
@@ -339,10 +339,6 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
             fixed[getGeomV(wing1[3])] = new_pos[0][1];
             fixed[getGeomV(wing2[2])] = new_pos[1][0];
             fixed[getGeomV(wing2[3])] = new_pos[1][1];
-            //setCoord_topo(wing1[2], new_pos[0][0]);
-            //setCoord_topo(wing1[3], new_pos[0][1]);
-            //setCoord_topo(wing2[2], new_pos[1][0]);
-            //setCoord_topo(wing2[3], new_pos[1][1]);
         }
         //变形
         {
@@ -843,8 +839,8 @@ std::vector<std::vector<OpenVolumeMesh::Vec3d>> MyMesh::untangleBottomFace(const
             double alpha = acos((corner|uData.at(i).face_d)/(corner.length()*uData.at(i).face_d.length()));
             if ((corner|uData.at(i).norm_d) < 0) alpha = 2*my_pi - alpha;
             
-            if (alpha < (my_pi/6) or alpha > (5*my_pi/4)) {
-                double theta = my_pi/6 - alpha;
+            if (alpha < (my_pi/18) or alpha > (5*my_pi/4)) {
+                double theta = my_pi/18 - alpha;
                 if (theta < 0) theta += 2*my_pi;
                 corner = cos(theta)*corner + (1-cos(theta))*(corner|uData.at(i).bline_d)*uData.at(i).bline_d - 
                          sin(theta)*(uData.at(i).bline_d%corner);
