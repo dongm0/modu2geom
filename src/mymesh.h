@@ -14,6 +14,13 @@ struct untangleData {
     std::vector<OpenVolumeMesh::Geometry::Vec3d> vertices;
 };
 
+struct controlPara {
+    //debug用
+    std::vector<int> vint = {};
+    std::vector<double> vdouble = {};
+    std::vector<char> vchar = {};
+};
+
 class MyMesh {
 public:
 
@@ -98,7 +105,7 @@ private:
     }
 
 
-    std::vector<std::vector<OpenVolumeMesh::Vec3d>> untangleBottomFace(const std::vector<untangleData> &uData);
+    //std::vector<std::vector<OpenVolumeMesh::Vec3d>> untangleBottomFace(const std::vector<untangleData> &uData);
 
 private:
     //私有变量

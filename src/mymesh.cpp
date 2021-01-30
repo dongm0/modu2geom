@@ -1,15 +1,8 @@
 #include "mymesh.h"
 #include "arapoperator.h"
 #include "msqoptimizer.h"
-/*
-#include <Mesquite/Mesquite_ArrayMesh.hpp>
-#include <Mesquite_IdealShapeTarget.hpp>
-#include <Mesquite_TMetric.hpp>
-#include <Mesquite_TQualityMetric.hpp>
-#include <Mesquite_ElementPMeanP.hpp>
-#include <Mesquite_InstructionQueue.hpp>
-#include <Mesquite_ConjugateGradient.hpp>
-*/
+
+namespace{
 
 static OpenVolumeMesh::Vec3d projectVectoDirection(const OpenVolumeMesh::Vec3d &v, const OpenVolumeMesh::Vec3d &ref) {
     auto ref_norm = ref.normalized();
@@ -18,6 +11,43 @@ static OpenVolumeMesh::Vec3d projectVectoDirection(const OpenVolumeMesh::Vec3d &
 
 static OpenVolumeMesh::Vec3d projectVectoPlane(const OpenVolumeMesh::Vec3d &v, const OpenVolumeMesh::Vec3d &ref) {
     return v - projectVectoDirection(v, ref);
+}
+
+static inline std::vector<std::vector<OpenVolumeMesh::Vec3d>> untangleBottomFace(const std::vector<untangleData> &uData, double minangle=9) {
+    using namespace OpenVolumeMesh;
+    const double my_pi = atan(1)*4;
+    
+    //可以考虑都单位化
+    int fsize = uData.size();
+    std::vector<std::vector<Vec3d>> _res;
+    for (int i=0; i<fsize; ++i) {
+        std::vector<Vec3d> _res1c;
+        for (int j=0; j<uData[i].vertices.size(); ++j) {
+            Vec3d corner = uData.at(i).vertices.at(j) - uData.at(i).assistV_d;
+            corner = corner - ((corner|uData.at(i).bline_d)/uData.at(i).bline_d.length())*(uData.at(i).bline_d/uData.at(i).bline_d.length());
+            Vec3d base = uData.at(i).vertices.at(j) - corner;
+
+            double alpha = acos((corner|uData.at(i).face_d)/(corner.length()*uData.at(i).face_d.length()));
+            if ((corner|uData.at(i).norm_d) < 0) alpha = 2*my_pi - alpha;
+            
+            if (alpha < (my_pi/(2*minangle)) or alpha > (5*my_pi/4)) {
+                double theta = my_pi/(2*minangle) - alpha;
+                if (theta < 0) theta += 2*my_pi;
+                corner = cos(theta)*corner + (1-cos(theta))*(corner|uData.at(i).bline_d)*uData.at(i).bline_d - 
+                         sin(theta)*(uData.at(i).bline_d%corner);
+            }
+            else if (alpha>(my_pi/3) and alpha<=(5*my_pi/4)) {
+                double theta = alpha - my_pi/3;
+                corner = cos(theta)*corner + (1-cos(theta))*(corner|uData.at(i).bline_d)*uData.at(i).bline_d + 
+                         sin(theta)*(uData.at(i).bline_d%corner);
+            }
+
+            _res1c.push_back(base + corner);
+        }
+        _res.push_back(_res1c);
+    }
+    return _res;
+}
 }
 
 bool MyMesh::ReadTopoFromFile(const std::string &filename) {
@@ -47,12 +77,8 @@ bool MyMesh::ReadTopoFromFile(const std::string &filename) {
 
     //add vertices
     for (uint8_t i=0; i<_vnum; ++i) {
-        //auto geom_v = m_mesh.add_vertex(Vec3d(0, 0, 0));
         auto topo_v = m_topomesh.add_vertex();
-        //m_vertices.push_back(geom_v);
         m_topo_vertices.push_back(topo_v);
-        //m_m2tm_v_mapping[geom_v] = topo_v;
-        //m_tm2m_v_mapping[topo_v] = geom_v;
     }
 
     //add topo cells
@@ -68,9 +94,6 @@ bool MyMesh::ReadTopoFromFile(const std::string &filename) {
             m_topomesh.add_cell(_cell, true);//false
         #endif
     }
-    //auto c0 = m_topomesh.cells_begin();
-    //auto _range = m_topomesh.halfface_vertices(m_topomesh.xfront_halfface(*c0));
-    //std::vector<VertexHandle> b(_range.first, _range.second);
     return true;
 }
 
@@ -129,14 +152,7 @@ bool MyMesh::GenerateOneCell(const OpenVolumeMesh::CellHandle &_ch) {
                 }
             }
         }
-        /*
-        for (auto c_it=m_topomesh.cc_iter(_ch); c_it->is_valid(); ++c_it) {
-            if (m_tm2m_mapping.find(_ch) == m_tm2m_mapping.end()) {
-                num_nbh++;
-                _nbh.push_back(*c_it);
-            }
-        }
-        */
+
         if (num_nbh == 3) {
             if (m_topomesh.opposite_halfface_handle_in_cell(_nbh_hf[0], _ch) == _nbh_hf[1]
             or m_topomesh.opposite_halfface_handle_in_cell(_nbh_hf[0], _ch) == _nbh_hf[2]
@@ -212,17 +228,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     m_m2tm_v_mapping[geomvertices[5]] = topvec[1];
     m_m2tm_v_mapping[geomvertices[6]] = topvec[2];
     m_m2tm_v_mapping[geomvertices[7]] = topvec[3];
-    /*
-    m_mesh.set_vertex(getGeomV(bottomvec[0]), Vec3d(0, 0, 0));
-    m_mesh.set_vertex(getGeomV(bottomvec[1]), Vec3d(1, 0, 0));
-    m_mesh.set_vertex(getGeomV(bottomvec[2]), Vec3d(1, 1, 0));
-    m_mesh.set_vertex(getGeomV(bottomvec[3]), Vec3d(0, 1, 0));
-    m_mesh.set_vertex(getGeomV(topvec[0]), Vec3d(0, 0, 1));
-    m_mesh.set_vertex(getGeomV(topvec[1]), Vec3d(1, 0, 1));
-    m_mesh.set_vertex(getGeomV(topvec[2]), Vec3d(1, 1, 1));
-    m_mesh.set_vertex(getGeomV(topvec[3]), Vec3d(0, 1, 1));
-    */
-    //std::vector<VertexHandle> cell_vertices{geomvertices), end(geomvertices)};
+
     std::swap(geomvertices[1], geomvertices[3]);
     auto _geomch = m_mesh.add_cell(geomvertices);
     m_tm2m_mapping[_ch] = _geomch;
@@ -241,9 +247,6 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     
     std::vector<VertexHandle> bottomvec(m_topomesh.halfface_vertices(_nbhf_vec[0]).first, m_topomesh.halfface_vertices(_nbhf_vec[0]).second);
     std::vector<VertexHandle> topvec = opposite_vertex_in_cell(m_topomesh, _ch, _nbhf_vec[0], bottomvec);
-    //#ifndef NDEBUG
-    //    assert(topvec.size()==4);
-    //#endif
 
     for (int i=0; i<4; ++i) {
         VertexHandle p0 = getGeomV(bottomvec[(i+3)%4]);
@@ -416,70 +419,59 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
         fan1 = {bf1[st1], bf1[(st1+1)%4], bf1[(st1+2)%4], bf1[(st1+3)%4]};
         fan2 = {bf2[st2], bf2[(st2+1)%4], bf2[(st2+2)%4], bf2[(st2+3)%4]};
         fan3 = {bf3[st3], bf3[(st3+1)%4], bf3[(st3+2)%4], bf3[(st3+3)%4]};
-        auto _top = opposite_vertex_in_cell(m_topomesh, _ch, _nbhf_vec[0], {fan1[2]});
-        jade = _top[0];
+        if (fan1[3] != fan2[1]) {
+            fan2.swap(fan3);
+        }
+        jade = opposite_vertex_in_cell(m_topomesh, _ch, _nbhf_vec[0], {fan1[2]})[0];
     }
     //deform
     {
         //结构解扭前的准备
-        Vec3d normdir, fan1dir, fan2dir, fan3dir, bottoml1, bottoml2, bottoml3;//估计的法向量，以及两边正交的方向，bottoml是两个底面交线的方向
+        Vec3d normdir, fan11dir, fan21dir, fan31dir, bottoml1, bottoml2, bottoml3;//估计的法向量，以及两边正交的方向，bottoml是两个底面交线的方向
         {
-            VertexHandle wbv1 = opposite_vertex_in_cell(m_topomesh, _nbc_vec[0], 
-                                m_topomesh.opposite_halfface_handle(_nbhf_vec[0]), {fan1[0]})[0];
-            VertexHandle wbv2 = opposite_vertex_in_cell(m_topomesh, _nbc_vec[1], 
-                                m_topomesh.opposite_halfface_handle(_nbhf_vec[1]), {fan2[0]})[0];
-            VertexHandle wbv3 = opposite_vertex_in_cell(m_topomesh, _nbc_vec[2], 
-                                m_topomesh.opposite_halfface_handle(_nbhf_vec[2]), {fan3[0]})[0];
-            normdir = (getCoord_topo(fan1[0])-getCoord_topo(wbv1)).normalize_cond() +
-                      (getCoord_topo(fan2[0])-getCoord_topo(wbv2)).normalize_cond() + 
-                      (getCoord_topo(fan3[0])-getCoord_topo(wbv3)).normalize_cond();
+            auto v13 = getCoord_topo(fan1[1]) - getCoord_topo(fan1[0]);
+            auto v12 = getCoord_topo(fan2[1]) - getCoord_topo(fan2[0]);
+            auto v23 = getCoord_topo(fan3[1]) - getCoord_topo(fan3[0]);
+            auto fan1n = v13%v12; auto fan2n = v12%v23; auto fan3n = v23%v13;
+            normdir = fan1n.normalize_cond()+fan2n.normalize_cond()+fan3n.normalize_cond();
+            normdir.normalize_cond();
+            fan11dir = projectVectoPlane(v13, normdir); fan11dir.normalize_cond();
+            fan21dir = projectVectoPlane(v12, normdir); fan21dir.normalize_cond();
+            fan31dir = projectVectoPlane(v23, normdir); fan31dir.normalize_cond();
+            bottoml1 = normdir%fan11dir; bottoml2 = normdir%fan21dir; bottoml3 = normdir%fan31dir;
 
-            Vec3d tmp = getCoord_topo(fan1[2]) - getCoord_topo(fan1[0]);
-            fan1dir = tmp - ((tmp|normdir)/normdir.length())*(normdir/normdir.length());
-            bottoml1 = normdir%fan1dir;
-            tmp = getCoord_topo(fan2[2]) - getCoord_topo(fan1[0]);
-            fan2dir = tmp - ((tmp|normdir)/normdir.length())*(normdir/normdir.length());
-            bottoml2 = normdir%fan2dir;
-            tmp = getCoord_topo(fan3[2]) - getCoord_topo(fan1[0]);
-            fan3dir = tmp - ((tmp|normdir)/normdir.length())*(normdir/normdir.length());
-            bottoml3 = normdir%fan3dir;
         }
+
         std::map<VertexHandle, Vec3d> fixed;
         {
+            
             std::vector<untangleData> uData(3);
-            uData[0] = {normdir, fan1dir, bottoml1, getCoord_topo(fan1[0]), {getCoord_topo(fan1[2]), getCoord_topo(fan1[3])}};
-            uData[1] = {normdir, fan2dir, bottoml2, getCoord_topo(fan2[0]), {getCoord_topo(fan2[2]), getCoord_topo(fan2[3])}};
-            uData[2] = {normdir, fan3dir, bottoml3, getCoord_topo(fan3[0]), {getCoord_topo(fan3[2]), getCoord_topo(fan3[3])}};
+            uData[0] = {normdir, fan11dir, bottoml1, getCoord_topo(fan1[0]), {getCoord_topo(fan1[1])}};
+            uData[1] = {normdir, fan21dir, bottoml2, getCoord_topo(fan2[0]), {getCoord_topo(fan2[1])}};
+            uData[2] = {normdir, fan31dir, bottoml3, getCoord_topo(fan3[0]), {getCoord_topo(fan3[1])}};
             auto new_pos = untangleBottomFace(uData);
-            fixed[getTopoV(jade)] = getCoord_topo(jade);
-            fixed[getTopoV(fan1[2])] = new_pos[0][0];
-            fixed[getTopoV(fan1[3])] = new_pos[0][1];
-            fixed[getTopoV(fan2[2])] = new_pos[1][0];
-            fixed[getTopoV(fan2[3])] = new_pos[1][1];
-            fixed[getTopoV(fan3[2])] = new_pos[2][0];
-            fixed[getTopoV(fan3[3])] = new_pos[2][1];
-            //setCoord_topo(fan1[2], new_pos[0][0]);
-            //setCoord_topo(fan1[3], new_pos[0][1]);
-            //setCoord_topo(fan2[2], new_pos[1][0]);
-            //setCoord_topo(fan2[3], new_pos[1][1]);
-            //setCoord_topo(fan3[2], new_pos[2][0]);
-            //setCoord_topo(fan3[3], new_pos[2][1]);
+            
+            fixed[getGeomV(fan1[0])] = getCoord_topo(fan1[0]);
+            fixed[getGeomV(fan1[1])] = new_pos[0][0];
+            fixed[getGeomV(fan2[1])] = new_pos[1][0];
+            fixed[getGeomV(fan3[1])] = new_pos[2][0];
+            
+            fixed[getGeomV(fan1[2])] = new_pos[0][0] + new_pos[1][0] - getCoord_topo(fan1[0]);
+            fixed[getGeomV(fan2[2])] = new_pos[1][0] + new_pos[2][0] - getCoord_topo(fan1[0]);
+            fixed[getGeomV(fan3[2])] = new_pos[2][0] + new_pos[0][0] - getCoord_topo(fan1[0]);
         }
         {
             ArapOperator::Instance().Optimize(m_mesh, fixed);
         }
-        WriteGeomToVTKFile("tmp.vtk");
     }
 
     //end
-    VertexHandle p10 = getGeomV(fan1[2]), p11 = getGeomV(fan1[1]), p12 = getGeomV(fan1[3]);
-    VertexHandle p20 = getGeomV(fan2[2]), p21 = getGeomV(fan2[1]), p22 = getGeomV(fan2[3]);
-    VertexHandle p30 = getGeomV(fan3[2]), p31 = getGeomV(fan3[1]), p32 = getGeomV(fan3[3]);
-    auto s1_mid = (m_mesh.vertex(p11)+m_mesh.vertex(p12)-2*m_mesh.vertex(p10)).normalize_cond()-m_mesh.vertex(p10);
-    auto s2_mid = (m_mesh.vertex(p21)+m_mesh.vertex(p22)-2*m_mesh.vertex(p20)).normalize_cond()-m_mesh.vertex(p20);
-    auto s3_mid = (m_mesh.vertex(p31)+m_mesh.vertex(p32)-2*m_mesh.vertex(p30)).normalize_cond()-m_mesh.vertex(p30);
-    auto jade_coord = (s1_mid+s2_mid+s3_mid)/3 + m_mesh.vertex((fan1[0]));
-    auto geomjade = m_mesh.add_vertex((s1_mid+s2_mid+s3_mid)/3);
+
+    auto s1_mid = m_mesh.vertex(getGeomV(fan1[1])) - m_mesh.vertex(getGeomV(fan1[0]));
+    auto s2_mid = m_mesh.vertex(getGeomV(fan2[1])) - m_mesh.vertex(getGeomV(fan2[0]));
+    auto s3_mid = m_mesh.vertex(getGeomV(fan3[1])) - m_mesh.vertex(getGeomV(fan3[0]));
+    auto jade_coord = s1_mid+s2_mid+s3_mid+m_mesh.vertex(getGeomV(fan1[0]));
+    auto geomjade = m_mesh.add_vertex(jade_coord);
     m_m2tm_v_mapping[jade] = geomjade;
     m_tm2m_v_mapping[geomjade] = jade;
     //m_mesh.set_vertex(getGeomV(jade), (s1_mid+s2_mid+s3_mid)/3);
@@ -491,6 +483,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     auto _geomch = m_mesh.add_cell(cell_vertices);
     m_tm2m_mapping[_ch] = _geomch;
     m_m2tm_mapping[_geomch] = _ch;
+    WriteGeomToVTKFile("tmp.vtk");
 
     return true;
 }
@@ -569,7 +562,6 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
             std::vector<untangleData> uData(2);
             uData[0] = {normdir, wing1dir, bottoml1, getCoord_topo(wing1[0]), {getCoord_topo(wing1[2]), getCoord_topo(wing1[3])}};
             uData[1] = {normdir, wing2dir, bottoml2, getCoord_topo(wing2[0]), {getCoord_topo(wing2[2]), getCoord_topo(wing2[3])}};
-            //uData[2] = {normdir, fan3dir, bottoml3, getCoord_topo(fan3[0]), {getCoord_topo(fan3[2]), getCoord_topo(fan3[3])}};
             auto new_pos = untangleBottomFace(uData);
             fixed[getGeomV(wing1[0])] = getCoord_topo(wing1[0]);
             fixed[getGeomV(wing1[1])] = getCoord_topo(wing1[1]);
@@ -579,10 +571,6 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
             fixed[getGeomV(wing2[1])] = getCoord_topo(wing2[1]);
             fixed[getGeomV(wing2[2])] = new_pos[1][0];
             fixed[getGeomV(wing2[3])] = new_pos[1][1];
-            //setCoord_topo(wing1[2], new_pos[0][0]);
-            //setCoord_topo(wing1[3], new_pos[0][1]);
-            //setCoord_topo(wing2[2], new_pos[1][0]);
-            //setCoord_topo(wing2[3], new_pos[1][1]);
         }
         {
             ArapOperator::Instance().Optimize(m_mesh, fixed);
@@ -611,7 +599,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     #ifndef NDEBUG
         assert(_nbhf_vec.size()==4 && _nbc_vec.size()==4);
     #endif
-    std::vector<VertexHandle> side1, side2, bottom1, bottom2;//两个wing是opposite的
+    std::vector<VertexHandle> side1, side2, bottom1, bottom2;//两个side是opposite的
     int num_s1, num_s2, num_b1, num_b2;
     //find bottom structure
     {
@@ -702,23 +690,17 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
         std::map<VertexHandle, Vec3d> fixed;
         {
             std::vector<untangleData> uData(2);
-            uData[0] = {normdir, side1dir, side1bdir, getCoord_topo(side1[1]), {getCoord_topo(side1[2]), getCoord_topo(side1[3]), getCoord_topo(side1[0])}};
-            uData[1] = {normdir, side2dir, side2bdir, getCoord_topo(side2[1]), {getCoord_topo(side2[2]), getCoord_topo(side2[3]), getCoord_topo(side2[0])}};
+            uData[0] = {normdir, bottom1dir, bottoml, getCoord_topo(bottom1[0]), {getCoord_topo(bottom1[2]), getCoord_topo(bottom1[3])}};
+            uData[1] = {normdir, bottom2dir, -1*bottoml, getCoord_topo(bottom2[0]), {getCoord_topo(bottom2[2]), getCoord_topo(bottom2[3])}};
             auto new_pos = untangleBottomFace(uData);
-            fixed[getGeomV(side1[0])] = new_pos[0][2];
-            fixed[getGeomV(side1[1])] = getCoord_topo(side1[1]);
-            fixed[getGeomV(side1[2])] = new_pos[0][0];
-            fixed[getGeomV(side1[3])] = new_pos[0][1];
-            fixed[getGeomV(side2[0])] = new_pos[1][2];
-            fixed[getGeomV(side2[1])] = getCoord_topo(side2[1]);
-            fixed[getGeomV(side2[2])] = new_pos[1][0];
-            fixed[getGeomV(side2[3])] = new_pos[1][1];
-            //setCoord_topo(side1[2], new_pos[0][0]);
-            //setCoord_topo(side1[3], new_pos[0][1]);
-            //setCoord_topo(side1[0], new_pos[0][2]);
-            //setCoord_topo(side2[2], new_pos[1][0]);
-            //setCoord_topo(side2[3], new_pos[1][1]);
-            //setCoord_topo(side2[0], new_pos[1][2]);
+            fixed[getGeomV(bottom1[0])] = getCoord_topo(bottom1[0]);
+            fixed[getGeomV(bottom1[1])] = getCoord_topo(bottom1[1]);
+            fixed[getGeomV(bottom1[2])] = new_pos[0][0];
+            fixed[getGeomV(bottom1[3])] = new_pos[0][1];
+            fixed[getGeomV(bottom2[2])] = new_pos[1][0];
+            fixed[getGeomV(bottom2[3])] = new_pos[1][1];
+            fixed[getGeomV(side1[3])] = new_pos[0][0] + new_pos[1][1] - getCoord_topo(bottom1[1]);
+            fixed[getGeomV(side2[3])] = new_pos[0][1] + new_pos[1][0] - getCoord_topo(bottom1[0]);
         }
         {
             ArapOperator::Instance().Optimize(m_mesh, fixed);
@@ -745,8 +727,6 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     std::vector<std::vector<VertexHandle>> wings;
     //find bottom structure
 
-
-    
     {
         HalfFaceHandle bottom_hf;
         std::set<HalfFaceHandle> _nbhf_set(_nbhf_vec.begin(), _nbhf_vec.end());
@@ -792,7 +772,13 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
             std::vector<untangleData> uData(2);
             uData[0] = {normdir, wingdir[0], bottoml[0], getCoord_topo(wings[0][0]), {getCoord_topo(wings[0][2]), getCoord_topo(wings[0][3])}};
             uData[1] = {normdir, wingdir[2], bottoml[2], getCoord_topo(wings[2][0]), {getCoord_topo(wings[2][2]), getCoord_topo(wings[2][3])}};
-            auto new_pos = untangleBottomFace(uData);
+            std::vector<std::vector<OpenVolumeMesh::Vec3d>> new_pos;
+            if (_ch.idx()>28) {
+                new_pos = untangleBottomFace(uData, 2);
+            }
+            else {
+                new_pos = untangleBottomFace(uData);
+            }
             fixed[getGeomV(wings[0][0])] = getCoord_topo(wings[0][0]);
             fixed[getGeomV(wings[0][1])] = getCoord_topo(wings[0][1]);
             fixed[getGeomV(wings[0][2])] = new_pos[0][0];
@@ -801,15 +787,15 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
             fixed[getGeomV(wings[2][1])] = getCoord_topo(wings[2][1]);
             fixed[getGeomV(wings[2][2])] = new_pos[1][0];
             fixed[getGeomV(wings[2][3])] = new_pos[1][1];
-            //setCoord_topo(wings[0][2], new_pos[0][0]);
-            //setCoord_topo(wings[0][3], new_pos[0][1]);
-            //setCoord_topo(wings[2][2], new_pos[1][0]);
-            //setCoord_topo(wings[2][3], new_pos[1][1]);
         }
         {
             ArapOperator::Instance().Optimize(m_mesh, fixed);
         }
-        WriteGeomToVTKFile("tmp.vtk");
+        std::vector<OpenVolumeMesh::VertexHandle> _tmp;
+        for (auto &x : fixed) {
+            _tmp.push_back(x.first);
+        }
+        WriteGeomToVTKFile("tmp.vtk", _tmp);
     }
 
     //end
@@ -822,80 +808,8 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     return true;
 }
 
-std::vector<std::vector<OpenVolumeMesh::Vec3d>> MyMesh::untangleBottomFace(const std::vector<untangleData> &uData) {
-    using namespace OpenVolumeMesh;
-    const double my_pi = atan(1)*4;
-    
-    //可以考虑都单位化
-    int fsize = uData.size();
-    std::vector<std::vector<Vec3d>> _res;
-    for (int i=0; i<fsize; ++i) {
-        std::vector<Vec3d> _res1c;
-        for (int j=0; j<uData[i].vertices.size(); ++j) {
-            Vec3d corner = uData.at(i).vertices.at(j) - uData.at(i).assistV_d;
-            corner = corner - ((corner|uData.at(i).bline_d)/uData.at(i).bline_d.length())*(uData.at(i).bline_d/uData.at(i).bline_d.length());
-            Vec3d base = uData.at(i).vertices.at(j) - corner;
-
-            double alpha = acos((corner|uData.at(i).face_d)/(corner.length()*uData.at(i).face_d.length()));
-            if ((corner|uData.at(i).norm_d) < 0) alpha = 2*my_pi - alpha;
-            
-            if (alpha < (my_pi/18) or alpha > (5*my_pi/4)) {
-                double theta = my_pi/18 - alpha;
-                if (theta < 0) theta += 2*my_pi;
-                corner = cos(theta)*corner + (1-cos(theta))*(corner|uData.at(i).bline_d)*uData.at(i).bline_d - 
-                         sin(theta)*(uData.at(i).bline_d%corner);
-            }
-            else if (alpha>(my_pi/3) and alpha<=(5*my_pi/4)) {
-                double theta = alpha - my_pi/3;
-                corner = cos(theta)*corner + (1-cos(theta))*(corner|uData.at(i).bline_d)*uData.at(i).bline_d + 
-                         sin(theta)*(uData.at(i).bline_d%corner);
-            }
-
-            _res1c.push_back(base + corner);
-        }
-        _res.push_back(_res1c);
-    }
-    return _res;
-}
-
 
 bool MyMesh::Optimize() {
     MsqOperator::Instance().Optimize(m_mesh);
     return true;
-    /*
-    using namespace Mesquite;
-    std::vector<double> coords;
-    for (auto v_it = m_mesh.vertices_begin(); v_it!=m_mesh.vertices_end(); ++v_it) {
-        auto c = m_mesh.vertex(*v_it);
-        coords.push_back(c[0]);
-        coords.push_back(c[1]);
-        coords.push_back(c[2]);
-    }
-    std::vector<int> fixedflag;
-    std::vector<int> connection;
-
-    ArrayMesh msqmesh(3, m_mesh.n_vertices(), coords.data(), fixedflag.data(), m_mesh.n_cells(), HEXAHEDRON, connection.data());
-    MsqError err;
-    
-    IdealShapeTarget target;
-    //TShapeSizeB1 m1;
-    TShapeSizeB3 m2;
-    //TSum mymetric(&m1, &m2);
-    TQualityMetric metric_0(&target, &m2);
-    ElementPMeanP metric(1.0, &metric_0);
-    PMeanPTemplate obj_func_opt(1.0, &metric);
-    ConjugateGradient improver(&obj_func_opt);;
-    improver.use_global_patch();
-    //improver.set_inner_termination_criterion(&e);
-    InstructionQueue queue;
-    queue.set_master_quality_improver(&improver, err);
-    queue.run_instructions(&msqmesh, err);
-
-    int i = 0;
-    for (auto v_it = m_mesh.vertices_begin(); v_it!=m_mesh.vertices_end(); ++v_it) {
-        m_mesh.set_vertex(*v_it, OpenVolumeMesh::Geometry::Vec3d(coords[i*3], coords[i*3+1], coords[i*3+2]));
-    }
-
-    return true;
-    */
 }

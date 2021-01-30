@@ -192,20 +192,39 @@ void MsqOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm) {
     inv_dect.run_instructions(&msqmesh, err);
     int inv_ele = 0, inv_sam = 0;
     qa.get_inverted_element_count(inv_ele, inv_sam, err);
-    
-    IdealShapeTarget target;
-    //TShapeSizeB1 m1;
-    TShapeSizeB3 m2;
-    //TSum mymetric(&m1, &m2);
-    TQualityMetric metric_0(&target, &m2);
-    ElementPMeanP metric(1.0, &metric_0);
-    PMeanPTemplate obj_func_opt(1.0, &metric);
-    QuasiNewton improver(&obj_func_opt);;
-    improver.use_global_patch();
-    //improver.set_inner_termination_criterion(&e);
-    InstructionQueue queue;
-    queue.set_master_quality_improver(&improver, err);
-    queue.run_instructions(&msqmesh, err);
+
+    if (false) {
+        IdealShapeTarget target;
+        //TShapeSizeB1 m1;
+        TShapeSizeNB3 m2;
+        //TSum mymetric(&m1, &m2);
+
+        TQualityMetric metric_0(&target, &m2);
+        ElementPMeanP metric(1.0, &metric_0);
+        PMeanPTemplate obj_func_opt(1.0, &metric);
+        QuasiNewton improver(&obj_func_opt);;
+        improver.use_global_patch();
+        //improver.set_inner_termination_criterion(&e);
+        InstructionQueue queue;
+        queue.set_master_quality_improver(&improver, err);
+        queue.run_instructions(&msqmesh, err);
+    }
+    else {
+        IdealShapeTarget target;
+        //TShapeSizeB1 m1;
+        TShapeSizeB3 m2;
+        //TSum mymetric(&m1, &m2);
+
+        TQualityMetric metric_0(&target, &m2);
+        ElementPMeanP metric(1.0, &metric_0);
+        PMeanPTemplate obj_func_opt(1.0, &metric);
+        QuasiNewton improver(&obj_func_opt);;
+        improver.use_global_patch();
+        //improver.set_inner_termination_criterion(&e);
+        InstructionQueue queue;
+        queue.set_master_quality_improver(&improver, err);
+        queue.run_instructions(&msqmesh, err);
+    }
 
     std::vector<Mesh::ElementHandle> vertices;
     std::vector<MsqVertex> coordinates;

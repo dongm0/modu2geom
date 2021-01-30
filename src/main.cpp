@@ -3,7 +3,7 @@
 
 std::string filepath("/home/dm/github/modu2geom/");
 
-std::string ifilename("con18.txt");
+std::string ifilename("con36-1.txt");
 std::string ofilename("");
 
 int main(int argc, char **argv) {
@@ -22,6 +22,9 @@ int main(int argc, char **argv) {
     mesh.GenerateOrder();
     mesh.checkTopo();
     for (int i=0; i<mesh.GetTopoCnum(); ++i) {
+        if (i >= 30) {
+            int _tmpppp = 0;
+        }
         mesh.GenerateOneCell(mesh.GetCurrentCellHandle());
         mesh.Optimize();
         mesh.WriteGeomToVTKFile(filepath+ofilename+"src/"+std::to_string(i)+".vtk");
