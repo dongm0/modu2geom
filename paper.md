@@ -6,8 +6,6 @@
 
 In this paper, we proposed a method getting optimal mesh from merely its node connection. Our method is based on the idea of element stacking. We add one hex element to a modular following its connection step by step and optimize the modular in each iteration, in this way we get the ideal modular. Out method contains two main steps. First, we enumerates different cases of adding one hex to modular, and we construct a generation tree, which ensures the deformation in the latter step less complicated. Then we use flipless harmonic-deformation to make adding new element convenient and without tangle. This method can be applied in mesh optimization, such as untangle. Using this method, we construct the 17-18 transformation modular.
 
-hispapershowsthatconstraintprogrammingtechniquescansuccessfullybeusedtosolvechallenginghex-meshingproblems.Schneiders'pyramidisasquare-basedpyramidwhosefacetsaresubdividedintothreeorfourquadranglesbyaddingverticesatedgemidpointsandfacetcentroids.Inthispaper,weprovethatSchneiders'pyramidhasnohexahedralmesheswithfewerthan18interiorverticesand17hexahedra,andintroduceavalidmeshwith44hexahedra.Wealsoconstructthesmallestknownmeshoftheoctagonalspindle,with40hexahedraand42interiorvertices.Theseresultswereobtainedthroughageneralpurposealgorithmthatcomputesthehexahedralmeshesconformaltoagivenquadrilateralsurfaceboundary.ThelowerboundforSchneiders'pyramidisobtainedbyexhaustivelylistingthehexahedralmeshesawithupto17interiorverticesandwhichhavethesameboundaryasthepyramid.Our44-elementmeshisobtainedbymodifyingapriorsolutionwith88hexahedra.Thenumberofelementswasreducedusinganalgorithmwhichlocallysimplifiesgroupsofhexahedra.Giventheboundaryofsuchagroup,ouralgorithmisusedtofindameshofitsinteriorthathasfewerelementsthantheinitialsubdivision.Theresultingmeshisuntangledtoobtainavalidhexahedralmesh.
-
 ## Key Words
 
 ## Introduction
@@ -17,3 +15,13 @@ At present, in the field of simulating calculation, hexahedral/quad mesh has sup
 Many existing methods can partly solve these questions, such as smoothing, interpolating, and energy-based optimizing methods. Unfortunately, when vertex connections are of low quality, for example, when the input mesh is highly-unstructured, containing lots of singularties, it's difficult to get high-quality and untangled mesh. Some distortion energy may have barrier layers to prevent tangling, but those barriers need an initial untangle mesh. To solve those problems, we put forward a procedure based on thought of mesh accumulation.
 
 Our main approach is to add hexahedral cells step by step, during which we make sure the mesh is untangled and with high quality. We take two steps to accomplish this. First we classified several different situations of adding one cell, and we propose a method to estimate the relationship between cell valence and deform in every step. Using this method, we construct a most suitable sequence to generate the whole mesh. 
+
+## background
+
+## our method
+
+### 3.1 initial untangled mesh
+
+
+
+### 3.2 
