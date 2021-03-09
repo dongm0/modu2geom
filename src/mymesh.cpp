@@ -1,6 +1,7 @@
 #include "mymesh.h"
 #include "arapoperator.h"
 #include "msqoptimizer.h"
+#include "OVMVtkHexIO.h"
 
 namespace{
 
@@ -118,11 +119,18 @@ bool MyMesh::GenerateOrder() {
 }
 
 bool MyMesh::WriteGeomToVTKFile(const std::string &filename) {
-    MsqOperator::Instance().Ovm2MsqOut(m_mesh, filename);
+    //MsqOperator::Instance().Ovm2MsqOut(m_mesh, filename);
+    std::ofstream fout;
+    fout.open(filename);
+    OVMWriteHexMesh(m_mesh, fout);
+    fout.close();
     return true;
 }
 bool MyMesh::WriteGeomToVTKFile(const std::string &filename, std::vector<OpenVolumeMesh::VertexHandle> &_tagged) {
-    MsqOperator::Instance().Ovm2MsqOut(m_mesh, _tagged, filename);
+    std::ofstream fout;
+    fout.open(filename);
+    OVMWriteHexMesh(m_mesh, fout, _tagged);
+    fout.close();
     return true;
 }
 
