@@ -82,7 +82,6 @@ IGL_INLINE Eigen::MatrixXd scaf_solve(SCAFData &data, int iter_num);
 IGL_INLINE void scaf_system(SCAFData &s, Eigen::SparseMatrix<double> &L,
                             Eigen::VectorXd &rhs);
 
-namespace scaf {
 // Compute SCAF energy
 // Inputs:
 //    s:     igl::SCAFData
@@ -90,6 +89,5 @@ namespace scaf {
 //    whole: Include scaffold if true
 IGL_INLINE double compute_energy(SCAFData &s, const Eigen::MatrixXd &w_uv,
                                  bool whole);
-} // namespace scaf
 } // namespace my_scaf
 } // namespace igl
