@@ -5,51 +5,54 @@
 namespace igl {
 namespace my_scaf {
 struct SCAFData {
+  // parameters
   double scaffold_factor = 10;
   igl::MappingEnergyType scaf_energy =
       igl::MappingEnergyType::SYMMETRIC_DIRICHLET;
   igl::MappingEnergyType slim_energy =
       igl::MappingEnergyType::SYMMETRIC_DIRICHLET;
 
-  // Output
-  int dim = 3;
+  int dim = 3;         // 3D only
   double total_energy; // scaffold + isometric
   double energy;       // objective value
 
   long mv_num = 0, mf_num = 0;
   long sv_num = 0, sf_num = 0;
-  long v_num{}, f_num = 0;
-  Eigen::MatrixXd m_V; // input initial mesh V
-  Eigen::MatrixXi m_T; // input initial mesh F/T
-  // INTERNAL
-  Eigen::MatrixXd w_uv; // whole domain uv: mesh + free vertices
-  Eigen::MatrixXi s_T;  // scaffold domain tets: scaffold tets
-  Eigen::MatrixXi w_T;
 
-  Eigen::VectorXd m_M; // mesh area or volume
-  Eigen::VectorXd s_M; // scaffold area or volume
-  Eigen::VectorXd w_M; // area/volume weights for whole
   double mesh_measure; // area or volume
   double proximal_p = 0;
-
-  Eigen::VectorXi frame_ids;
-  Eigen::VectorXi fixed_ids;
 
   std::map<int, Eigen::RowVectorXd> soft_cons;
   double soft_const_p = 1e4;
 
-  Eigen::VectorXi internal_bnd;
-  Eigen::MatrixXd rect_frame_V;
-  // multi-chart support
-  std::vector<int> component_sizes;
-  std::vector<int> bnd_sizes;
+  // inner mesh
+  Eigen::MatrixXd m_V;
+  Eigen::MatrixXi m_T;
+  Eigen::MatrixXd m_Vref;
+  Eigen::VectorXi b;
+  Eigen::MatrixXd bc;
+  Eigen::VectorXd m_M;
+  Eigen::MatrixXi m_surface;
 
-  // reweightedARAP interior variables.
+  uint32_t m_surface_fn, m_surface_vn;
+  std::vector<uint32_t> mapping_tetgen2scaf;
+  std::unordered_map<uint32_t, uint32_t> mapping_scaf2tetgen;
+  std::vector<uint32_t> mapping_t2s;
+  std::unordered_map<uint32_t, uint32_t> mapping_s2t;
+
+  // scaffold
+  Eigen::MatrixXi s_T;
+  Eigen::VectorXd s_M;
+
+  Eigen::MatrixXd w_V;
+
+  // pre_calc data
+  Eigen::MatrixXd m_GradRef;
+  
+  //
+  Eigen::MatrixXd s_Grad;
+
   bool has_pre_calc = false;
-  Eigen::SparseMatrix<double> Dx_s, Dy_s, Dz_s;
-  Eigen::SparseMatrix<double> Dx_m, Dy_m, Dz_m;
-  Eigen::MatrixXd Ri_m, Ji_m, Ri_s, Ji_s;
-  Eigen::MatrixXd W_m, W_s;
 };
 // Compute necessary information to start using SCAF
 // Inputs:
@@ -87,7 +90,7 @@ IGL_INLINE void scaf_system(SCAFData &s, Eigen::SparseMatrix<double> &L,
 //    s:     igl::SCAFData
 //    w_uv:  (#V_mesh + #V_scaf) by dim matrix
 //    whole: Include scaffold if true
-IGL_INLINE double compute_energy(SCAFData &s, const Eigen::MatrixXd &w_uv,
+IGL_INLINE double compute_energy(SCAFData &s, const Eigen::MatrixXd &w_V,
                                  bool whole);
 } // namespace my_scaf
 } // namespace igl

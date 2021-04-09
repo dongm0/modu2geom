@@ -1,4 +1,3 @@
-#pragma once
 /*===========================================================================*\
  *                                                                           *
  *                            OpenVolumeMesh                                 *
@@ -33,6 +32,16 @@
  *                                                                           *
 \*===========================================================================*/
 
+/*===========================================================================*\
+ *                                                                           *
+ *   $Revision$                                                         *
+ *   $Date$                    *
+ *   $LastChangedBy$                                                *
+ *                                                                           *
+\*===========================================================================*/
+
+#ifndef TETRAHEDRALMESHTOPOLOGYKERNEL_HH
+#define TETRAHEDRALMESHTOPOLOGYKERNEL_HH
 
 #ifndef NDEBUG
 #include <iostream>
@@ -41,7 +50,6 @@
 
 #include "../Core/TopologyKernel.hh"
 #include "TetrahedralMeshIterators.hh"
-#include "OpenVolumeMesh/Config/Export.hh"
 
 namespace OpenVolumeMesh {
 
@@ -52,20 +60,25 @@ namespace OpenVolumeMesh {
  *
  */
 
-class OVM_EXPORT TetrahedralMeshTopologyKernel : public TopologyKernel {
+class TetrahedralMeshTopologyKernel : public TopologyKernel {
 public:
 
-    TetrahedralMeshTopologyKernel() = default;
-    ~TetrahedralMeshTopologyKernel() override = default;
+    // Constructor
+    TetrahedralMeshTopologyKernel();
 
-    FaceHandle add_face(const std::vector<HalfEdgeHandle>& _halfedges, bool _topologyCheck = false) override;
+    // Destructor
+    ~TetrahedralMeshTopologyKernel();
 
-    FaceHandle add_face(const std::vector<VertexHandle>& _vertices) override;
+    // Overridden function
+    virtual FaceHandle add_face(const std::vector<HalfEdgeHandle>& _halfedges, bool _topologyCheck = false);
 
-    CellHandle add_cell(const std::vector<HalfFaceHandle>& _halffaces, bool _topologyCheck = false) override;
+    // Overridden function
+    virtual FaceHandle add_face(const std::vector<VertexHandle>& _vertices);
+
+    // Overridden function
+    virtual CellHandle add_cell(const std::vector<HalfFaceHandle>& _halffaces, bool _topologyCheck = false);
 
     CellHandle add_cell(const std::vector<VertexHandle>& _vertices, bool _topologyCheck = false);
-
     CellHandle add_cell(VertexHandle _vh0, VertexHandle _vh1, VertexHandle _vh2, VertexHandle _vh3, bool _topologyCheck = false);
 
     HalfFaceHandle add_halfface(const std::vector<HalfEdgeHandle>& _halfedges, bool _topologyCheck = false);
@@ -81,8 +94,6 @@ public:
     std::vector<VertexHandle> get_halfface_vertices(HalfFaceHandle hfh) const;
     std::vector<VertexHandle> get_halfface_vertices(HalfFaceHandle hfh, VertexHandle vh) const;
     std::vector<VertexHandle> get_halfface_vertices(HalfFaceHandle hfh, HalfEdgeHandle heh) const;
-
-    VertexHandle halfface_opposite_vertex(HalfFaceHandle hfh) const;
 
 
     VertexHandle collapse_edge(HalfEdgeHandle _heh);
@@ -124,3 +135,4 @@ private:
 
 } // Namespace OpenVolumeMesh
 
+#endif /* TETRAHEDRALMESHTOPOLOGYKERNEL_HH */

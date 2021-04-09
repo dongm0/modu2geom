@@ -52,7 +52,6 @@
 #include <string>
 
 #include <iterator>
-#include "OpenVolumeMesh/Config/Export.hh"
 
 namespace OpenVolumeMesh
 {
@@ -60,13 +59,11 @@ namespace OpenVolumeMesh
 template <typename ValueT>
 std::ostream& serialize(std::ostream& os, const ValueT& rhs);
 
-OVM_EXPORT
 std::ostream& serialize(std::ostream& os, const std::string& rhs);
 
 template <typename ValueT>
 std::istream& deserialize(std::istream& is, ValueT& rhs);
 
-OVM_EXPORT
 std::istream& deserialize(std::istream& is, std::string& rhs);
 
 template <typename KeyT, typename ValueT>
@@ -81,7 +78,6 @@ std::ostream& operator<<(std::ostream& os, const std::vector< ValueT >& rhs);
 template <typename ValueT>
 std::istream& operator>>(std::istream& is, std::vector< ValueT >& rhs);
 
-OVM_EXPORT
 std::istream& operator>>(std::istream& is, std::vector< bool >& rhs);
 
 }

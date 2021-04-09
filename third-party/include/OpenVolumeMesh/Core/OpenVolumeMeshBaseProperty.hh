@@ -32,6 +32,15 @@
  *                                                                           *
 \*===========================================================================*/
 
+/*===========================================================================*\
+ *                                                                           *
+ *   $Revision$                                                         *
+ *   $Date$                    *
+ *   $LastChangedBy$                                                *
+ *                                                                           *
+\*===========================================================================*/
+
+
 #ifndef OPENVOLUMEMESHBASEPROPERTY_HH
 #define OPENVOLUMEMESHBASEPROPERTY_HH
 
@@ -40,9 +49,8 @@
 #include <vector>
 
 #include "OpenVolumeMeshHandle.hh"
-#include "OpenVolumeMesh/Config/Export.hh"
 
-namespace OpenVolumeMesh {
+//== CLASS DEFINITION =========================================================
 
 /** \class OpenVolumeMeshBaseProperty
 
@@ -50,7 +58,9 @@ namespace OpenVolumeMesh {
 
  **/
 
-class OVM_EXPORT OpenVolumeMeshBaseProperty {
+namespace OpenVolumeMesh {
+
+class OpenVolumeMeshBaseProperty {
 public:
 
     friend class ResourceManager;
@@ -61,14 +71,9 @@ public:
 
 public:
 
-	explicit OpenVolumeMeshBaseProperty(
-            const std::string& _name,
-            const std::string& _internal_type_name)
-        : name_(_name),
-          internal_type_name_(_internal_type_name),
-          persistent_(false),
-          handle_(-1)
-    {}
+	explicit OpenVolumeMeshBaseProperty(const std::string& _name = "<unknown>") :
+		name_(_name), persistent_(false), handle_(-1) {
+	}
 
 	OpenVolumeMeshBaseProperty(const OpenVolumeMeshBaseProperty& _rhs) = default;
 
@@ -81,9 +86,6 @@ public:
 
 	/// Resize storage to hold n elements.
 	virtual void resize(size_t _n) = 0;
-
-	/// Return underlying container size
-	virtual size_t size() const = 0;
 
 	/// Clear all elements and free memory.
 	virtual void clear() = 0;
@@ -103,10 +105,6 @@ public:
 	/// Return the name of the property
 	const std::string& name() const {
 		return name_;
-	}
-
-	const std::string& internal_type_name() const {
-		return internal_type_name_;
 	}
 
 	// Function to serialize a property
@@ -150,7 +148,6 @@ protected:
 private:
 
 	std::string name_;
-	std::string internal_type_name_;
 
 	bool persistent_;
 

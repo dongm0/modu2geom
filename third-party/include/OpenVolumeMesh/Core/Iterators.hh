@@ -47,12 +47,7 @@
 #include <set>
 #include <vector>
 
-#ifndef NDEBUG
-#include <iostream>
-#endif
-
 #include "OpenVolumeMeshHandle.hh"
-#include "OpenVolumeMesh/Config/Export.hh"
 
 namespace OpenVolumeMesh {
 
@@ -78,12 +73,8 @@ public:
         valid_(true), mesh_(_mesh) {}
 
     // STL compliance (needs to have default constructor)
-	BaseIterator() : valid_(false), mesh_(nullptr) {}
-    BaseIterator(const BaseIterator& _c) = default;
-	virtual ~BaseIterator() = default;
-
-    BaseIterator& operator=(const BaseIterator& _c) = default;
-
+	BaseIterator() : valid_(false), mesh_(0) {}
+	virtual ~BaseIterator() {}
 	bool operator== (const BaseIterator& _c) const {
         return (this->cur_handle_ == _c.cur_handle() &&
                 this->valid_ == _c.valid() &&
@@ -103,6 +94,13 @@ public:
 
 	bool operator< (const BaseIterator& _c) const {
 	    return cur_handle_.idx() < _c.cur_handle_.idx();
+	}
+
+	BaseIterator& operator=(const BaseIterator& _c) {
+		this->valid_ = _c.valid();
+        this->cur_handle_ = _c.cur_handle();
+		this->mesh_ = _c.mesh();
+		return *this;
 	}
 
 	operator bool() const {
@@ -186,9 +184,8 @@ public:
         lap_(0),
         max_laps_(1)
     {}
-    BaseCirculator(const BaseCirculator& _c) = default;
 
-    virtual ~BaseCirculator() = default;
+    virtual ~BaseCirculator() {}
 
     bool operator== (const BaseCirculator& _c) const {
         return (BaseIter::operator==(_c) &&
@@ -206,7 +203,13 @@ public:
             return lap_ < _c.lap_;
     }
 
-    BaseCirculator& operator=(const BaseCirculator& _c) = default;
+    BaseCirculator& operator=(const BaseCirculator& _c) {
+        BaseIter::operator=(_c);
+        this->ref_handle_ = _c.ref_handle();
+        this->lap_ = _c.lap_;
+        this->max_laps_ = _c.max_laps_;
+        return *this;
+    }
 
     const IH& ref_handle() const {
         return ref_handle_;
@@ -235,7 +238,7 @@ protected:
 
 //===========================================================================
 
-class OVM_EXPORT VertexOHalfEdgeIter :
+class VertexOHalfEdgeIter :
     public BaseCirculator<
   VertexHandle,
   HalfEdgeHandle> {
@@ -298,7 +301,7 @@ private:
 
 //===========================================================================
 
-class OVM_EXPORT VertexVertexIter :
+class VertexVertexIter :
     public BaseCirculator<
   VertexHandle,
   VertexHandle> {
@@ -359,7 +362,7 @@ private:
 
 //===========================================================================
 
-class OVM_EXPORT HalfEdgeHalfFaceIter : public BaseCirculator<
+class HalfEdgeHalfFaceIter : public BaseCirculator<
 	HalfEdgeHandle,
 	HalfFaceHandle> {
 public:
@@ -368,7 +371,7 @@ public:
 			HalfFaceHandle> BaseIter;
 
 
-    HalfEdgeHalfFaceIter(const HalfEdgeHandle& _heIdx, const TopologyKernel* _mesh, int _max_laps = 1);
+    HalfEdgeHalfFaceIter(const HalfEdgeHandle& _heIdx, const TopologyKernel* _mesh, int _max_laps);
 
 	// Post increment/decrement operator
 	HalfEdgeHalfFaceIter operator++(int) {
@@ -417,7 +420,7 @@ private:
 
 //===========================================================================
 
-class OVM_EXPORT VertexFaceIter : public BaseCirculator<
+class VertexFaceIter : public BaseCirculator<
   VertexHandle,
   FaceHandle> {
 public:
@@ -475,7 +478,7 @@ private:
 
 //===========================================================================
 
-class OVM_EXPORT VertexCellIter : public BaseCirculator<
+class VertexCellIter : public BaseCirculator<
 	VertexHandle,
 	CellHandle> {
 public:
@@ -531,7 +534,7 @@ private:
     size_t cur_index_;
 };
 
-class OVM_EXPORT HalfEdgeCellIter : public BaseCirculator<
+class HalfEdgeCellIter : public BaseCirculator<
 	HalfEdgeHandle,
 	CellHandle> {
 public:
@@ -593,7 +596,7 @@ private:
 
 //===========================================================================
 
-class OVM_EXPORT CellVertexIter : public BaseCirculator<
+class CellVertexIter : public BaseCirculator<
 	CellHandle,
 	VertexHandle> {
 public:
@@ -651,7 +654,7 @@ private:
 
 //===========================================================================
 
-class OVM_EXPORT CellCellIter : public BaseCirculator<
+class CellCellIter : public BaseCirculator<
 	CellHandle,
 	CellHandle> {
 public:
@@ -709,7 +712,7 @@ private:
 
 //===========================================================================
 
-class OVM_EXPORT HalfFaceVertexIter : public BaseCirculator<
+class HalfFaceVertexIter : public BaseCirculator<
     HalfFaceHandle,
     VertexHandle> {
 public:
@@ -767,7 +770,7 @@ private:
 
 //===========================================================================
 
-class OVM_EXPORT BoundaryHalfFaceHalfFaceIter : public BaseCirculator<HalfFaceHandle,
+class BoundaryHalfFaceHalfFaceIter : public BaseCirculator<HalfFaceHandle,
     HalfFaceHandle> {
 private:
     typedef BaseCirculator<HalfFaceHandle,
@@ -827,7 +830,7 @@ private:
 
 //===========================================================================
 
-class OVM_EXPORT VertexIter : public BaseIterator<VertexHandle> {
+class VertexIter : public BaseIterator<VertexHandle> {
 public:
     typedef BaseIterator<VertexHandle> BaseIter;
 
@@ -881,7 +884,7 @@ private:
 
 //===========================================================================
 
-class OVM_EXPORT EdgeIter : public BaseIterator<EdgeHandle> {
+class EdgeIter : public BaseIterator<EdgeHandle> {
 public:
     typedef BaseIterator<EdgeHandle> BaseIter;
 
@@ -935,7 +938,7 @@ private:
 
 //===========================================================================
 
-class OVM_EXPORT HalfEdgeIter : public BaseIterator<HalfEdgeHandle> {
+class HalfEdgeIter : public BaseIterator<HalfEdgeHandle> {
 public:
     typedef BaseIterator<HalfEdgeHandle> BaseIter;
 
@@ -989,7 +992,7 @@ private:
 
 //===========================================================================
 
-class OVM_EXPORT FaceIter : public BaseIterator<FaceHandle> {
+class FaceIter : public BaseIterator<FaceHandle> {
 public:
     typedef BaseIterator<FaceHandle> BaseIter;
 
@@ -1043,7 +1046,7 @@ private:
 
 //===========================================================================
 
-class OVM_EXPORT HalfFaceIter : public BaseIterator<HalfFaceHandle> {
+class HalfFaceIter : public BaseIterator<HalfFaceHandle> {
 public:
     typedef BaseIterator<HalfFaceHandle> BaseIter;
 
@@ -1097,7 +1100,7 @@ private:
 
 //===========================================================================
 
-class OVM_EXPORT CellIter : public BaseIterator<CellHandle> {
+class CellIter : public BaseIterator<CellHandle> {
 public:
     typedef BaseIterator<CellHandle> BaseIter;
 
@@ -1151,476 +1154,57 @@ private:
 
 //===========================================================================
 
-namespace Internal {
-
-//===========================================================================
-
-class OVM_EXPORT VertexIHalfEdgeIterImpl : public BaseCirculator<VertexHandle, HalfEdgeHandle> {
+class BoundaryFaceIter : public BaseIterator<FaceHandle> {
 public:
+    typedef BaseIterator<FaceHandle> BaseIter;
 
-    typedef BaseCirculator<VertexHandle, HalfEdgeHandle> BaseIter;
-    typedef VertexHandle CenterEntityHandle;
 
-    VertexIHalfEdgeIterImpl(const VertexHandle& _ref_h, const TopologyKernel* _mesh, int _max_laps = 1);
-
-    VertexIHalfEdgeIterImpl& operator++();
-    VertexIHalfEdgeIterImpl& operator--();
-
-private:
-    VertexOHalfEdgeIter voh_iter_;
-};
-
-//===========================================================================
-
-class OVM_EXPORT VertexEdgeIterImpl : public BaseCirculator<VertexHandle, EdgeHandle> {
-public:
-
-    typedef BaseCirculator<VertexHandle, EdgeHandle> BaseIter;
-    typedef VertexHandle CenterEntityHandle;
-
-    VertexEdgeIterImpl(const VertexHandle& _ref_h, const TopologyKernel* _mesh, int _max_laps = 1);
-
-    VertexEdgeIterImpl& operator++();
-    VertexEdgeIterImpl& operator--();
-
-private:
-    VertexOHalfEdgeIter voh_iter_;
-};
-
-//===========================================================================
-
-class OVM_EXPORT VertexHalfFaceIterImpl : public BaseCirculator<VertexHandle, HalfFaceHandle> {
-public:
-
-    typedef BaseCirculator<VertexHandle, HalfFaceHandle> BaseIter;
-    typedef VertexHandle CenterEntityHandle;
-
-    VertexHalfFaceIterImpl(const VertexHandle& _ref_h, const TopologyKernel* _mesh, int _max_laps = 1);
-
-    VertexHalfFaceIterImpl& operator++();
-    VertexHalfFaceIterImpl& operator--();
-
-private:
-    std::vector<HalfFaceHandle> halffaces_;
-    size_t cur_index_;
-};
-
-//===========================================================================
-
-class OVM_EXPORT HalfEdgeFaceIterImpl : public BaseCirculator<HalfEdgeHandle, FaceHandle> {
-public:
-
-    typedef BaseCirculator<HalfEdgeHandle, FaceHandle> BaseIter;
-    typedef HalfEdgeHandle CenterEntityHandle;
-
-    HalfEdgeFaceIterImpl(const HalfEdgeHandle& _ref_h, const TopologyKernel* _mesh, int _max_laps = 1);
-
-    HalfEdgeFaceIterImpl& operator++();
-    HalfEdgeFaceIterImpl& operator--();
-
-private:
-    std::vector<FaceHandle> faces_;
-    size_t cur_index_;
-};
-
-//===========================================================================
-
-class OVM_EXPORT EdgeHalfFaceIterImpl : public BaseCirculator<EdgeHandle, HalfFaceHandle> {
-public:
-
-    typedef BaseCirculator<EdgeHandle, HalfFaceHandle> BaseIter;
-    typedef EdgeHandle CenterEntityHandle;
-
-    EdgeHalfFaceIterImpl(const EdgeHandle& _ref_h, const TopologyKernel* _mesh, int _max_laps = 1);
-
-    EdgeHalfFaceIterImpl& operator++();
-    EdgeHalfFaceIterImpl& operator--();
-
-private:
-    std::vector<HalfFaceHandle> halffaces_;
-    size_t cur_index_;
-};
-
-//===========================================================================
-
-class OVM_EXPORT EdgeFaceIterImpl : public HalfEdgeFaceIterImpl {
-public:
-
-    typedef EdgeHandle CenterEntityHandle;
-    EdgeFaceIterImpl(const EdgeHandle& _ref_h, const TopologyKernel* _mesh, int _max_laps = 1);
-
-};
-
-//===========================================================================
-
-class OVM_EXPORT EdgeCellIterImpl : public HalfEdgeCellIter {
-public:
-
-    typedef EdgeHandle CenterEntityHandle;
-    EdgeCellIterImpl(const EdgeHandle& _ref_h, const TopologyKernel* _mesh, int _max_laps = 1);
-
-};
-
-//===========================================================================
-
-class OVM_EXPORT HalfFaceHalfEdgeIterImpl : public BaseCirculator<HalfFaceHandle, HalfEdgeHandle> {
-public:
-
-    typedef BaseCirculator<HalfFaceHandle, HalfEdgeHandle> BaseIter;
-    typedef HalfFaceHandle CenterEntityHandle;
-
-    HalfFaceHalfEdgeIterImpl(const HalfFaceHandle& _ref_h, const TopologyKernel* _mesh, int _max_laps = 1);
-
-    HalfFaceHalfEdgeIterImpl& operator++();
-    HalfFaceHalfEdgeIterImpl& operator--();
-
-private:
-    size_t cur_index_;
-};
-
-//===========================================================================
-
-class OVM_EXPORT HalfFaceEdgeIterImpl : public BaseCirculator<HalfFaceHandle, EdgeHandle> {
-public:
-
-    typedef BaseCirculator<HalfFaceHandle, EdgeHandle> BaseIter;
-    typedef HalfFaceHandle CenterEntityHandle;
-
-    HalfFaceEdgeIterImpl(const HalfFaceHandle& _ref_h, const TopologyKernel* _mesh, int _max_laps = 1);
-
-    HalfFaceEdgeIterImpl& operator++();
-    HalfFaceEdgeIterImpl& operator--();
-
-private:
-    size_t cur_index_;
-};
-
-//===========================================================================
-
-class OVM_EXPORT FaceVertexIterImpl : public HalfFaceVertexIter {
-public:
-
-    typedef FaceHandle CenterEntityHandle;
-    FaceVertexIterImpl(const FaceHandle& _ref_h, const TopologyKernel* _mesh, int _max_laps = 1);
-
-};
-
-//===========================================================================
-
-class OVM_EXPORT FaceHalfEdgeIterImpl : public HalfFaceHalfEdgeIterImpl {
-public:
-
-    typedef FaceHandle CenterEntityHandle;
-    FaceHalfEdgeIterImpl(const FaceHandle& _ref_h, const TopologyKernel* _mesh, int _max_laps = 1);
-
-};
-
-//===========================================================================
-
-class OVM_EXPORT FaceEdgeIterImpl : public HalfFaceEdgeIterImpl {
-public:
-
-    typedef FaceHandle CenterEntityHandle;
-    FaceEdgeIterImpl(const FaceHandle& _ref_h, const TopologyKernel* _mesh, int _max_laps = 1);
-
-};
-
-//===========================================================================
-
-class OVM_EXPORT CellHalfEdgeIterImpl : public BaseCirculator<CellHandle, HalfEdgeHandle> {
-public:
-
-    typedef BaseCirculator<CellHandle, HalfEdgeHandle> BaseIter;
-    typedef CellHandle CenterEntityHandle;
-
-    CellHalfEdgeIterImpl(const CellHandle& _ref_h, const TopologyKernel* _mesh, int _max_laps = 1);
-
-    CellHalfEdgeIterImpl& operator++();
-    CellHalfEdgeIterImpl& operator--();
-
-private:
-    std::vector<HalfEdgeHandle> halfedges_;
-    size_t cur_index_;
-};
-
-//===========================================================================
-
-class OVM_EXPORT CellEdgeIterImpl : public BaseCirculator<CellHandle, EdgeHandle> {
-public:
-
-    typedef BaseCirculator<CellHandle, EdgeHandle> BaseIter;
-    typedef CellHandle CenterEntityHandle;
-
-    CellEdgeIterImpl(const CellHandle& _ref_h, const TopologyKernel* _mesh, int _max_laps = 1);
-
-    CellEdgeIterImpl& operator++();
-    CellEdgeIterImpl& operator--();
-
-private:
-    std::vector<EdgeHandle> edges_;
-    size_t cur_index_;
-};
-
-//===========================================================================
-
-class OVM_EXPORT CellHalfFaceIterImpl : public BaseCirculator<CellHandle, HalfFaceHandle> {
-public:
-
-    typedef BaseCirculator<CellHandle, HalfFaceHandle> BaseIter;
-    typedef CellHandle CenterEntityHandle;
-
-    CellHalfFaceIterImpl(const CellHandle& _ref_h, const TopologyKernel* _mesh, int _max_laps = 1);
-
-    CellHalfFaceIterImpl& operator++();
-    CellHalfFaceIterImpl& operator--();
-
-private:
-    std::vector<HalfFaceHandle>::const_iterator hf_iter_;
-};
-
-//===========================================================================
-
-class OVM_EXPORT CellFaceIterImpl : public BaseCirculator<CellHandle, FaceHandle> {
-public:
-
-    typedef BaseCirculator<CellHandle, FaceHandle> BaseIter;
-    typedef CellHandle CenterEntityHandle;
-
-    CellFaceIterImpl(const CellHandle& _ref_h, const TopologyKernel* _mesh, int _max_laps = 1);
-
-    CellFaceIterImpl& operator++();
-    CellFaceIterImpl& operator--();
-
-private:
-    std::vector<HalfFaceHandle>::const_iterator hf_iter_;
-};
-
-//===========================================================================
-
-} // Namespace Internal
-
-//===========================================================================
-
-template <class CirculatorImpl>
-class GenericCirculator : public CirculatorImpl {
-public:
-
-    GenericCirculator(const typename CirculatorImpl::CenterEntityHandle& _ref_h, const TopologyKernel* _mesh, int _max_laps = 1) :
-        CirculatorImpl(_ref_h, _mesh, _max_laps) {}
-
-    GenericCirculator& operator++() {
-        CirculatorImpl::operator++();
-        return *this;
-    }
-
-    GenericCirculator& operator--() {
-        CirculatorImpl::operator--();
-        return *this;
-    }
+    explicit BoundaryFaceIter(const TopologyKernel* _mesh);
 
     // Post increment/decrement operator
-    GenericCirculator operator++(int) {
-        GenericCirculator cpy = *this;
+    BoundaryFaceIter operator++(int) {
+        BoundaryFaceIter cpy = *this;
         ++(*this);
         return cpy;
     }
-    GenericCirculator operator--(int) {
-        GenericCirculator cpy = *this;
+    BoundaryFaceIter operator--(int) {
+        BoundaryFaceIter cpy = *this;
         --(*this);
         return cpy;
     }
-    GenericCirculator operator+(int _n) {
-        GenericCirculator cpy = *this;
+    BoundaryFaceIter operator+(int _n) {
+        BoundaryFaceIter cpy = *this;
         for(int i = 0; i < _n; ++i) {
             ++cpy;
         }
         return cpy;
     }
-    GenericCirculator operator-(int _n) {
-        GenericCirculator cpy = *this;
+    BoundaryFaceIter operator-(int _n) {
+        BoundaryFaceIter cpy = *this;
         for(int i = 0; i < _n; ++i) {
             --cpy;
         }
         return cpy;
     }
-    GenericCirculator& operator+=(int _n) {
+    BoundaryFaceIter& operator+=(int _n) {
         for(int i = 0; i < _n; ++i) {
             ++(*this);
         }
         return *this;
     }
-    GenericCirculator& operator-=(int _n) {
+    BoundaryFaceIter& operator-=(int _n) {
         for(int i = 0; i < _n; ++i) {
             --(*this);
         }
         return *this;
     }
 
-};
-
-//===========================================================================
-
-
-template class OVM_EXPORT GenericCirculator<Internal::VertexIHalfEdgeIterImpl>;
-template class OVM_EXPORT GenericCirculator<Internal::VertexEdgeIterImpl>;
-template class OVM_EXPORT GenericCirculator<Internal::VertexHalfFaceIterImpl>;
-
-template class OVM_EXPORT GenericCirculator<Internal::HalfEdgeFaceIterImpl>;
-
-template class OVM_EXPORT GenericCirculator<Internal::EdgeHalfFaceIterImpl>;
-template class OVM_EXPORT GenericCirculator<Internal::EdgeFaceIterImpl>;
-template class OVM_EXPORT GenericCirculator<Internal::EdgeCellIterImpl>;
-
-template class OVM_EXPORT GenericCirculator<Internal::HalfFaceHalfEdgeIterImpl>;
-template class OVM_EXPORT GenericCirculator<Internal::HalfFaceEdgeIterImpl>;
-
-template class OVM_EXPORT GenericCirculator<Internal::FaceVertexIterImpl>;
-template class OVM_EXPORT GenericCirculator<Internal::FaceHalfEdgeIterImpl>;
-template class OVM_EXPORT GenericCirculator<Internal::FaceEdgeIterImpl>;
-
-template class OVM_EXPORT GenericCirculator<Internal::CellHalfEdgeIterImpl>;
-template class OVM_EXPORT GenericCirculator<Internal::CellEdgeIterImpl>;
-template class OVM_EXPORT GenericCirculator<Internal::CellHalfFaceIterImpl>;
-template class OVM_EXPORT GenericCirculator<Internal::CellFaceIterImpl>;
-
-
-
-
-
-typedef GenericCirculator<Internal::VertexIHalfEdgeIterImpl> VertexIHalfEdgeIter;
-typedef GenericCirculator<Internal::VertexEdgeIterImpl> VertexEdgeIter;
-typedef GenericCirculator<Internal::VertexHalfFaceIterImpl> VertexHalfFaceIter;
-
-typedef GenericCirculator<Internal::HalfEdgeFaceIterImpl> HalfEdgeFaceIter;
-
-typedef GenericCirculator<Internal::EdgeHalfFaceIterImpl> EdgeHalfFaceIter;
-typedef GenericCirculator<Internal::EdgeFaceIterImpl> EdgeFaceIter;
-typedef GenericCirculator<Internal::EdgeCellIterImpl> EdgeCellIter;
-
-typedef GenericCirculator<Internal::HalfFaceHalfEdgeIterImpl> HalfFaceHalfEdgeIter;
-typedef GenericCirculator<Internal::HalfFaceEdgeIterImpl> HalfFaceEdgeIter;
-
-typedef GenericCirculator<Internal::FaceVertexIterImpl> FaceVertexIter;
-typedef GenericCirculator<Internal::FaceHalfEdgeIterImpl> FaceHalfEdgeIter;
-typedef GenericCirculator<Internal::FaceEdgeIterImpl> FaceEdgeIter;
-
-typedef GenericCirculator<Internal::CellHalfEdgeIterImpl> CellHalfEdgeIter;
-typedef GenericCirculator<Internal::CellEdgeIterImpl> CellEdgeIter;
-typedef GenericCirculator<Internal::CellHalfFaceIterImpl> CellHalfFaceIter;
-typedef GenericCirculator<Internal::CellFaceIterImpl> CellFaceIter;
-
-//===========================================================================
-
-template <class Iter, class Handle>
-class BoundaryItemIter : public BaseIterator<Handle> {
-public:
-    typedef BaseIterator<Handle> BaseIter;
-
-
-    explicit BoundaryItemIter(const TopologyKernel* _mesh) :
-    BaseIter(_mesh),
-    it_(_mesh, Handle(0)),
-    it_begin_(_mesh, Handle(0)),
-    it_end_(_mesh, Handle((int)n_items())) {
-
-        if(!has_incidences()) {
-    #ifndef NDEBUG
-            std::cerr << "This iterator needs bottom-up incidences!" << std::endl;
-    #endif
-            BaseIter::valid(false);
-            return;
-        }
-
-        while(it_ != it_end_ && !BaseIter::mesh()->is_boundary(*it_)){
-            ++it_;
-        }
-        BaseIter::valid(it_ != it_end_);
-        if(BaseIter::valid()) {
-            BaseIter::cur_handle(*it_);
-        }
-    }
-
-    // Post increment/decrement operator
-    BoundaryItemIter operator++(int) {
-        BoundaryItemIter cpy = *this;
-        ++(*this);
-        return cpy;
-    }
-    BoundaryItemIter operator--(int) {
-        BoundaryItemIter cpy = *this;
-        --(*this);
-        return cpy;
-    }
-    BoundaryItemIter operator+(int _n) {
-        BoundaryItemIter cpy = *this;
-        for(int i = 0; i < _n; ++i) {
-            ++cpy;
-        }
-        return cpy;
-    }
-    BoundaryItemIter operator-(int _n) {
-        BoundaryItemIter cpy = *this;
-        for(int i = 0; i < _n; ++i) {
-            --cpy;
-        }
-        return cpy;
-    }
-    BoundaryItemIter& operator+=(int _n) {
-        for(int i = 0; i < _n; ++i) {
-            ++(*this);
-        }
-        return *this;
-    }
-    BoundaryItemIter& operator-=(int _n) {
-        for(int i = 0; i < _n; ++i) {
-            --(*this);
-        }
-        return *this;
-    }
-
-    BoundaryItemIter& operator--() {
-        --it_;
-        while(it_ >= it_begin_ && !BaseIter::mesh()->is_boundary(*it_)){
-            --it_;
-        }
-        if(it_ >= it_begin_) {
-            BaseIter::cur_handle(*it_);
-        } else {
-            BaseIter::valid(false);
-        }
-        return *this;
-    }
-
-    BoundaryItemIter& operator++() {
-        ++it_;
-        while(it_ != it_end_ && !BaseIter::mesh()->is_boundary(*it_)){
-            ++it_;
-        }
-        if(it_ != it_end_) {
-            BaseIter::cur_handle(*it_);
-        } else {
-            BaseIter::valid(false);
-        }
-        return *this;
-    }
+    BoundaryFaceIter& operator++();
+    BoundaryFaceIter& operator--();
 
 private:
-    size_t n_items() const;
-    bool has_incidences() const;
-
-private:
-    Iter it_;
-    const Iter it_begin_;
-    const Iter it_end_;
+    FaceIter bf_it_;
 };
-
-//===========================================================================
-typedef BoundaryItemIter<VertexIter, VertexHandle> BoundaryVertexIter;
-typedef BoundaryItemIter<HalfEdgeIter, HalfEdgeHandle> BoundaryHalfEdgeIter;
-typedef BoundaryItemIter<EdgeIter, EdgeHandle> BoundaryEdgeIter;
-typedef BoundaryItemIter<HalfFaceIter, HalfFaceHandle> BoundaryHalfFaceIter;
-typedef BoundaryItemIter<FaceIter, FaceHandle> BoundaryFaceIter;
-typedef BoundaryItemIter<CellIter, CellHandle> BoundaryCellIter;
 
 //===========================================================================
 

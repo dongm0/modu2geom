@@ -45,12 +45,11 @@
 
 #include <vector>
 
-#include "OpenVolumeMesh/Config/Export.hh"
 #include "OpenVolumeMeshHandle.hh"
 
 namespace OpenVolumeMesh {
 
-class OVM_EXPORT OpenVolumeMeshEdge {
+class OpenVolumeMeshEdge {
 friend class TopologyKernel;
 public:
     OpenVolumeMeshEdge(const VertexHandle& _fromVertex,
@@ -59,10 +58,13 @@ public:
         toVertex_(_toVertex) {
     }
 
-    const VertexHandle from_vertex() const {
+    virtual ~OpenVolumeMeshEdge() {
+    }
+
+    const VertexHandle& from_vertex() const {
         return fromVertex_;
     }
-    const VertexHandle to_vertex() const {
+    const VertexHandle& to_vertex() const {
         return toVertex_;
     }
 
@@ -85,11 +87,14 @@ std::ostream& operator<<(std::ostream& _os, const OpenVolumeMeshEdge& _edge);
 
 //***************************************************************************
 
-class OVM_EXPORT OpenVolumeMeshFace {
+class OpenVolumeMeshFace {
 friend class TopologyKernel;
 public:
     explicit OpenVolumeMeshFace(const std::vector<HalfEdgeHandle>& _halfedges) :
         halfedges_(_halfedges) {
+    }
+
+    virtual ~OpenVolumeMeshFace() {
     }
 
     const std::vector<HalfEdgeHandle>& halfedges() const & {
@@ -116,11 +121,14 @@ std::ostream& operator<<(std::ostream& _os, const OpenVolumeMeshFace& _face);
 
 //***************************************************************************
 
-class OVM_EXPORT OpenVolumeMeshCell {
+class OpenVolumeMeshCell {
 friend class TopologyKernel;
 public:
     explicit OpenVolumeMeshCell(const std::vector<HalfFaceHandle>& _halffaces) :
         halffaces_(_halffaces) {
+    }
+
+    virtual ~OpenVolumeMeshCell() {
     }
 
     const std::vector<HalfFaceHandle>& halffaces() const & {

@@ -43,15 +43,14 @@
 #include "Entities.hh"
 #include "../System/FunctionalInclude.hh"
 #include "../System/Deprecation.hh"
-#include "OpenVolumeMesh/Config/Export.hh"
 
 namespace OpenVolumeMesh {
 
 // Define handle types in order to distinguish different entities by their indices
-class OVM_EXPORT OpenVolumeMeshHandle {
+class OpenVolumeMeshHandle {
 public:
     // Default constructor
-    explicit constexpr OpenVolumeMeshHandle(int _idx) : idx_(_idx) {}
+    explicit OpenVolumeMeshHandle(int _idx) : idx_(_idx) {}
 
 	OpenVolumeMeshHandle& operator=(int _idx) {
 		idx_ = _idx;
@@ -82,10 +81,8 @@ public:
 
 	void idx(const int& _idx) { idx_ = _idx; }
 
-#if OVM_ENABLE_DEPRECATED_APIS
     OVM_DEPRECATED("use explicit .idx() instead")
     inline operator int() const { return idx_; }
-#endif
 
 	void reset() { idx_ = -1; }
 
@@ -93,29 +90,19 @@ private:
 	int idx_;
 };
 
+
 template<typename EntityTag,
     typename = typename std::enable_if<is_entity<EntityTag>::value>::type>
-class PropHandleTag {};
-
-template <typename T> struct is_prop_handle_tag : std::false_type {};
-template<typename T>
-struct is_prop_handle_tag<PropHandleTag<T>> : std::true_type {};
-
-template<typename T>
-using is_handle_tag = std::enable_if<is_entity<T>::value || is_prop_handle_tag<T>::value>;
-
-
-template<typename EntityTag, typename = typename is_handle_tag<EntityTag>::type>
 class HandleT : public OpenVolumeMeshHandle
 {
 public:
     using Entity = EntityTag;
-    explicit constexpr HandleT(int _idx = -1) : OpenVolumeMeshHandle(_idx) {}
+    explicit HandleT(int _idx = -1) : OpenVolumeMeshHandle(_idx) {}
 
     static HandleT<EntityTag>
     from_unsigned(size_t _idx)
     {
-        if (_idx <= static_cast<size_t>(std::numeric_limits<int>::max())) {
+        if (_idx <= std::numeric_limits<int>::max()) {
             return HandleT<EntityTag>(static_cast<int>(_idx));
         } else {
             assert(false);
@@ -125,14 +112,6 @@ public:
 };
 
 // Default entity handles
-//
-template class OVM_EXPORT HandleT<Entity::Vertex>;
-template class OVM_EXPORT HandleT<Entity::HalfEdge>;
-template class OVM_EXPORT HandleT<Entity::Edge>;
-template class OVM_EXPORT HandleT<Entity::HalfFace>;
-template class OVM_EXPORT HandleT<Entity::Face>;
-template class OVM_EXPORT HandleT<Entity::Cell>;
-template class OVM_EXPORT HandleT<Entity::Mesh>;
 
 using VertexHandle   = HandleT<Entity::Vertex>;
 using HalfEdgeHandle = HandleT<Entity::HalfEdge>;
@@ -200,22 +179,16 @@ private:
     CellHandle thld_;
 };
 
-OVM_EXPORT
 bool operator==(const int& _lhs, const OpenVolumeMeshHandle& _rhs);
 
-OVM_EXPORT
 bool operator==(const unsigned int& _lhs, const OpenVolumeMeshHandle& _rhs);
 
-OVM_EXPORT
 bool operator!=(const int& _lhs, const OpenVolumeMeshHandle& _rhs);
 
-OVM_EXPORT
 bool operator!=(const unsigned int& _lhs, const OpenVolumeMeshHandle& _rhs);
 
-OVM_EXPORT
 std::ostream& operator<<(std::ostream& _ostr, const OpenVolumeMeshHandle& _handle);
 
-OVM_EXPORT
 std::istream& operator>>(std::istream& _istr, OpenVolumeMeshHandle& _handle);
 
 } // Namespace OpenVolumeMesh

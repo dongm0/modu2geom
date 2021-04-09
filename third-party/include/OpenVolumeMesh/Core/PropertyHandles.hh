@@ -40,8 +40,14 @@
 
 namespace OpenVolumeMesh {
 
-template<typename EntityTag>
-using PropHandleT = HandleT<PropHandleTag<EntityTag>>;
+template<typename EntityTag,
+    typename = typename std::enable_if<is_entity<EntityTag>::value>::type>
+class PropHandleT : public OpenVolumeMeshHandle
+{
+public:
+    using Entity = EntityTag;
+    using OpenVolumeMeshHandle::OpenVolumeMeshHandle;
+};
 
 using VertexPropHandle   = PropHandleT<Entity::Vertex>;
 using EdgePropHandle     = PropHandleT<Entity::Edge>;

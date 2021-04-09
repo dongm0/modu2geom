@@ -62,62 +62,57 @@ template<class T>
 class OpenVolumeMeshPropertyT: public OpenVolumeMeshBaseProperty {
 public:
 
-    template <class PropT, class Entity> friend class PropertyPtr;
+    template <class PropT, class HandleT> friend class PropertyPtr;
 
-    typedef T                                         Value;
-    typedef typename std::vector<T>                   vector_type;
-    typedef T                                         value_type;
-    typedef typename vector_type::reference           reference;
-    typedef typename vector_type::const_reference     const_reference;
+	typedef T 										Value;
+	typedef std::vector<T> 				            vector_type;
+	typedef T 										value_type;
+	typedef typename vector_type::reference 		reference;
+	typedef typename vector_type::const_reference 	const_reference;
 
 public:
 
-	explicit OpenVolumeMeshPropertyT(
-            const std::string& _name,
-            const std::string& _internal_type_name,
-            const T &_def = T())
-        : OpenVolumeMeshBaseProperty(_name, _internal_type_name),
-          def_(_def)
-    {}
+	OpenVolumeMeshPropertyT(const std::string& _name = "<unknown>", const T &_def = T()) :
+		OpenVolumeMeshBaseProperty(_name),
+		def_(_def) {
+	}
 
 
 	OpenVolumeMeshPropertyT(const OpenVolumeMeshPropertyT& _rhs) = default;
 
 public:
 	// inherited from OpenVolumeMeshBaseProperty
-	void reserve(size_t _n) override{
+	virtual void reserve(size_t _n) {
 		data_.reserve(_n);
 	}
-	void resize(size_t _n) override {
+	virtual void resize(size_t _n) {
                 data_.resize(_n, def_);
 	}
-	size_t size() const override {
-		return data_.size();
-	}
-	void clear() override {
+	virtual void clear() {
 		data_.clear();
 		vector_type().swap(data_);
 	}
-	void push_back() override {
+	virtual void push_back() {
 		data_.push_back(def_);
 	}
-	void swap(size_t _i0, size_t _i1) override {
+	virtual void swap(size_t _i0, size_t _i1) {
         std::swap(data_[_i0], data_[_i1]);
     }
+
 
 	virtual void copy(size_t _src_idx, size_t _dst_idx) {
 		data_[_dst_idx] = data_[_src_idx];
 	}
-	void delete_element(size_t _idx) override {
-		data_.erase(data_.begin() + static_cast<long>(_idx));
+	void delete_element(size_t _idx) {
+		data_.erase(data_.begin() + _idx);
 	}
 
 public:
 
-	size_t n_elements() const override {
+	virtual size_t n_elements() const {
 		return data_.size();
 	}
-	size_t element_size() const override {
+	virtual size_t element_size() const {
         return sizeof(T);
     }
 
@@ -130,18 +125,18 @@ public:
 	};
 #endif
 
-    size_t size_of() const override {
+    virtual size_t size_of() const {
         if (element_size() != OpenVolumeMeshBaseProperty::UnknownSize)
             return this->OpenVolumeMeshBaseProperty::size_of(n_elements());
         return std::accumulate(data_.begin(), data_.end(), size_t(0), plus());
     }
 
-	size_t size_of(size_t _n_elem) const override {
+	virtual size_t size_of(size_t _n_elem) const {
 		return this->OpenVolumeMeshBaseProperty::size_of(_n_elem);
 	}
 
 	// Function to serialize a property
-    void serialize(std::ostream& _ostr) const override {
+    virtual void serialize(std::ostream& _ostr) const {
         for(typename vector_type::const_iterator it = data_.begin();
                 it != data_.end(); ++it) {
             OpenVolumeMesh::serialize(_ostr, *it) << std::endl;
@@ -149,7 +144,7 @@ public:
     }
 
     // Function to deserialize a property
-    void deserialize(std::istream& _istr) override {
+    virtual void deserialize(std::istream& _istr) {
         for(unsigned int i = 0; i < n_elements(); ++i) {
             OpenVolumeMesh::deserialize(_istr, data_[i]);
         }
@@ -186,7 +181,7 @@ public:
 	}
 
 	/// Make a copy of self.
-	OpenVolumeMeshPropertyT<T>* clone() const override {
+	OpenVolumeMeshPropertyT<T>* clone() const {
 		OpenVolumeMeshPropertyT<T>* p = new OpenVolumeMeshPropertyT<T>(*this);
 		return p;
 	}
@@ -202,7 +197,7 @@ public:
 protected:
 
     /// Delete multiple entries in list
-    void delete_multiple_entries(const std::vector<bool>& _tags) override {
+    virtual void delete_multiple_entries(const std::vector<bool>& _tags) {
 
         assert(_tags.size() == data_.size());
         vector_type new_data;
@@ -238,7 +233,7 @@ inline void OpenVolumeMeshPropertyT<bool>::swap(size_t _i0, size_t _i1)
 
     auto tmp = data_[_i0];
     data_[_i0] = data_[_i1];
-    data_[_i1] = tmp;
+    data_[_i1] = tmp;;
 }
 
 template<>

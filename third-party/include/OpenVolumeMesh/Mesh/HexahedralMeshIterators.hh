@@ -44,14 +44,13 @@
 #define HEXAHEDRALMESHITERATORS_HH
 
 #include "../Core/Iterators.hh"
-#include "OpenVolumeMesh/Config/Export.hh"
 
 namespace OpenVolumeMesh {
 
 class HexahedralMeshTopologyKernel;
 
 
-class OVM_EXPORT CellSheetCellIter : public BaseCirculator<CellHandle, CellHandle> {
+class CellSheetCellIter : public BaseCirculator<CellHandle, CellHandle> {
 private:
     typedef BaseCirculator<CellHandle, CellHandle>    BaseIter;
 public:
@@ -105,7 +104,7 @@ private:
 };
 
 
-class OVM_EXPORT HalfFaceSheetHalfFaceIter : public BaseCirculator<HalfFaceHandle,HalfFaceHandle> {
+class HalfFaceSheetHalfFaceIter : public BaseCirculator<HalfFaceHandle,HalfFaceHandle> {
 private:
     typedef BaseCirculator<HalfFaceHandle, HalfFaceHandle> BaseIter;
 public:
@@ -175,7 +174,7 @@ private:
  *   0-------1
  */
 
-class OVM_EXPORT HexVertexIter : public BaseCirculator<CellHandle,
+class HexVertexIter : public BaseCirculator<CellHandle,
     VertexHandle> {
 private:
     typedef BaseCirculator<CellHandle,

@@ -32,6 +32,14 @@
  *                                                                           *
 \*===========================================================================*/
 
+/*===========================================================================*\
+ *                                                                           *
+ *   $Revision$                                                         *
+ *   $Date$                    *
+ *   $LastChangedBy$                                                *
+ *                                                                           *
+\*===========================================================================*/
+
 #ifndef HEXAHEDRALMESHTOPOLOGYKERNEL_HH
 #define HEXAHEDRALMESHTOPOLOGYKERNEL_HH
 
@@ -42,7 +50,6 @@
 
 #include "../Core/TopologyKernel.hh"
 #include "HexahedralMeshIterators.hh"
-#include "OpenVolumeMesh/Config/Export.hh"
 
 namespace OpenVolumeMesh {
 
@@ -76,7 +83,7 @@ namespace OpenVolumeMesh {
  * \li \c 6. ZB
  */
 
-class OVM_EXPORT HexahedralMeshTopologyKernel : public TopologyKernel {
+class HexahedralMeshTopologyKernel : public TopologyKernel {
 public:
 
     // Orientation constants
@@ -89,23 +96,23 @@ public:
     static const unsigned char INVALID = 6;
 
     static inline unsigned char opposite_orientation(const unsigned char _d) {
-        return static_cast<unsigned char>(_d % 2 == 0 ? _d + 1 : _d - 1);
+        return (_d % 2 == 0 ? _d + 1 : _d - 1);
     }
 
     // Constructor
-    HexahedralMeshTopologyKernel() = default;
+    HexahedralMeshTopologyKernel();
 
     // Destructor
-    ~HexahedralMeshTopologyKernel() override = default;
+    ~HexahedralMeshTopologyKernel();
 
     // Overridden function
-    FaceHandle add_face(const std::vector<HalfEdgeHandle>& _halfedges, bool _topologyCheck = false) override;
+    virtual FaceHandle add_face(const std::vector<HalfEdgeHandle>& _halfedges, bool _topologyCheck = false);
 
     // Overridden function
-    FaceHandle add_face(const std::vector<VertexHandle>& _vertices) override;
+    virtual FaceHandle add_face(const std::vector<VertexHandle>& _vertices);
 
     /// Overridden function
-    CellHandle add_cell(const std::vector<HalfFaceHandle>& _halffaces, bool _topologyCheck = false) override;
+    virtual CellHandle add_cell(const std::vector<HalfFaceHandle>& _halffaces, bool _topologyCheck = false);
 
 private:
 

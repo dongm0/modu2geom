@@ -34,7 +34,10 @@
 #include <algorithm>
 #include <map>
 #include <set>
+#include <unordered_set>
 #include <vector>
+
+#include "tetgen.h"
 
 namespace igl {
 namespace my_scaf {
@@ -42,15 +45,17 @@ IGL_INLINE void update_scaffold(igl::my_scaf::SCAFData &s) {
   s.mv_num = s.m_V.rows();
   s.mf_num = s.m_T.rows();
 
-  s.v_num = s.w_uv.rows();
+  // s.v_num = s.w_uv.rows();
+  s.sv_num = s.w_V.rows() - s.m_V.rows();
   s.sf_num = s.s_T.rows();
 
-  s.sv_num = s.v_num - s.mv_num;
-  s.f_num = s.sf_num + s.mf_num;
+  // s.sv_num = s.s_V.rows();
+  // s.f_num = s.sf_num + s.mf_num;
 
   s.s_M = Eigen::VectorXd::Constant(s.sf_num, s.scaffold_factor);
 }
 
+/*
 IGL_INLINE void adjusted_grad(Eigen::MatrixXd &V, Eigen::MatrixXi &F,
                               double area_threshold,
                               Eigen::SparseMatrix<double> &Dx,
@@ -85,7 +90,9 @@ IGL_INLINE void adjusted_grad(Eigen::MatrixXd &V, Eigen::MatrixXi &F,
       Dz.coeffRef(k, F(k, j)) = standard_grad(2, j);
     }
 }
+*/
 
+/*
 IGL_INLINE void
 compute_scaffold_gradient_matrix(SCAFData &s, Eigen::SparseMatrix<double> &D1,
                                  Eigen::SparseMatrix<double> &D2) {
@@ -126,87 +133,198 @@ compute_scaffold_gradient_matrix(SCAFData &s, Eigen::SparseMatrix<double> &D1,
   D2 = F2.col(0).asDiagonal() * Dx + F2.col(1).asDiagonal() * Dy +
        F2.col(2).asDiagonal() * Dz;
 }
+*/
 
 IGL_INLINE void mesh_improve(igl::my_scaf::SCAFData &s) {
   using namespace Eigen;
-  MatrixXd m_uv = s.w_uv.topRows(s.mv_num);
-  MatrixXd V_bnd;
-  V_bnd.resize(s.internal_bnd.size(), 2);
-  for (int i = 0; i < s.internal_bnd.size(); i++) // redoing step 1.
-  {
-    V_bnd.row(i) = m_uv.row(s.internal_bnd(i));
-  }
+  MatrixXd m_uv = s.m_V;
+  s.mapping_t2s = s.mapping_tetgen2scaf;
+  s.mapping_s2t = s.mapping_scaf2tetgen;
 
-  if (s.rect_frame_V.size() == 0) {
-    Matrix2d ob; // = rect_corners;
+  tetgenio in, out;
+  // 3.30 这些先作废，后面再规定
+  {
+    VectorXd uv_max = m_uv.colwise().maxCoeff();
+    VectorXd uv_min = m_uv.colwise().minCoeff();
+    uv_max += Vector3d(1, 1, 1), uv_min -= Vector3d(1, 1, 1);
+    double lenx = uv_max(0) - uv_min(0), leny = uv_max(1) - uv_min(1),
+           lenz = uv_max(2) - uv_min(2);
+
+    uint32_t xsnn = std::floor((lenx - 2 >= 0) ? (lenx - 2) : 0),
+             ysnn = std::floor((leny - 2 >= 0) ? (leny - 2) : 0),
+             zsnn = std::floor((lenz - 2 >= 0) ? (lenz - 2) : 0);
+
+    double dx = lenx / (xsnn + 1), dy = leny / (ysnn + 1),
+           dz = lenz / (zsnn + 1);
+
+    in.numberofpoints = s.m_surface_vn + 2 * ((xsnn + 2) * (ysnn + 2) +
+                                              (xsnn + 2) * zsnn + ysnn * zsnn);
+    in.pointlist = new double[in.numberofpoints * 3];
+    uint32_t cvit = 0; // cur_v_id_tetgen
+    for (; cvit < s.m_surface_vn; cvit++) {
+      in.pointlist[cvit * 3 + 0] = s.m_V(s.mapping_tetgen2scaf.at(cvit), 0);
+      in.pointlist[cvit * 3 + 1] = s.m_V(s.mapping_tetgen2scaf.at(cvit), 1);
+      in.pointlist[cvit * 3 + 2] = s.m_V(s.mapping_tetgen2scaf.at(cvit), 2);
+    }
+    for (uint32_t i = 0; i < ysnn + 2; ++i) {
+      for (uint32_t j = 0; j < xsnn + 2; ++j) {
+        auto cur_pos = uv_min + i * Vector3d(dx, 0, 0) + j * Vector3d(0, dy, 0);
+        in.pointlist[(cvit + i * (xsnn + 2) + j) * 3 + 0] = cur_pos.x();
+        in.pointlist[(cvit + i * (xsnn + 2) + j) * 3 + 1] = cur_pos.y();
+        in.pointlist[(cvit + i * (xsnn + 2) + j) * 3 + 2] = cur_pos.z();
+      }
+    }
+    cvit += (xsnn + 2) * (ysnn + 2);
+    for (uint32_t i = 0; i < zsnn; ++i) {
+    }
+  }
+  // 3.31 新
+  {
+    VectorXd uv_max = m_uv.colwise().maxCoeff();
+    VectorXd uv_min = m_uv.colwise().minCoeff();
+    uv_max += Vector3d(1, 1, 1), uv_min -= Vector3d(1, 1, 1);
+
+    in.numberofpoints = s.m_surface_vn + 8;
+    in.pointlist = new double[in.numberofpoints * 3];
+    for (uint32_t i = 0; i < s.m_surface_vn; ++i) {
+      int scaf_num = s.mapping_t2s[i];
+      in.pointlist[i * 3 + 0] = s.m_V(scaf_num, 0);
+      in.pointlist[i * 3 + 1] = s.m_V(scaf_num, 1);
+      in.pointlist[i * 3 + 2] = s.m_V(scaf_num, 2);
+    }
     {
-      VectorXd uv_max = m_uv.colwise().maxCoeff();
-      VectorXd uv_min = m_uv.colwise().minCoeff();
-      VectorXd uv_mid = (uv_max + uv_min) / 2.;
+      int _tn = s.m_surface_vn;
+      in.pointlist[(_tn + 0) * 3 + 0] = uv_min(0);
+      in.pointlist[(_tn + 0) * 3 + 1] = uv_min(1);
+      in.pointlist[(_tn + 0) * 3 + 2] = uv_min(2);
 
-      Eigen::Array2d scaf_range(3, 3);
-      ob.row(0) = uv_mid.array() + scaf_range * ((uv_min - uv_mid).array());
-      ob.row(1) = uv_mid.array() + scaf_range * ((uv_max - uv_mid).array());
-    }
-    Vector2d rect_len;
-    rect_len << ob(1, 0) - ob(0, 0), ob(1, 1) - ob(0, 1);
-    int frame_points = 5;
+      in.pointlist[(_tn + 1) * 3 + 0] = uv_max(0);
+      in.pointlist[(_tn + 1) * 3 + 1] = uv_min(1);
+      in.pointlist[(_tn + 1) * 3 + 2] = uv_min(2);
 
-    s.rect_frame_V.resize(4 * frame_points, 2);
-    for (int i = 0; i < frame_points; i++) {
-      // 0,0;0,1
-      s.rect_frame_V.row(i) << ob(0, 0),
-          ob(0, 1) + i * rect_len(1) / frame_points;
-      // 0,0;1,1
-      s.rect_frame_V.row(i + frame_points)
-          << ob(0, 0) + i * rect_len(0) / frame_points,
-          ob(1, 1);
-      // 1,0;1,1
-      s.rect_frame_V.row(i + 2 * frame_points) << ob(1, 0),
-          ob(1, 1) - i * rect_len(1) / frame_points;
-      // 1,0;0,1
-      s.rect_frame_V.row(i + 3 * frame_points)
-          << ob(1, 0) - i * rect_len(0) / frame_points,
-          ob(0, 1);
-      // 0,0;0,1
+      in.pointlist[(_tn + 2) * 3 + 0] = uv_max(0);
+      in.pointlist[(_tn + 2) * 3 + 1] = uv_max(1);
+      in.pointlist[(_tn + 2) * 3 + 2] = uv_min(2);
+
+      in.pointlist[(_tn + 3) * 3 + 0] = uv_min(0);
+      in.pointlist[(_tn + 3) * 3 + 1] = uv_max(1);
+      in.pointlist[(_tn + 3) * 3 + 2] = uv_min(2);
+
+      in.pointlist[(_tn + 4) * 3 + 0] = uv_min(0);
+      in.pointlist[(_tn + 4) * 3 + 1] = uv_min(1);
+      in.pointlist[(_tn + 4) * 3 + 2] = uv_max(2);
+
+      in.pointlist[(_tn + 5) * 3 + 0] = uv_max(0);
+      in.pointlist[(_tn + 5) * 3 + 1] = uv_min(1);
+      in.pointlist[(_tn + 5) * 3 + 2] = uv_max(2);
+
+      in.pointlist[(_tn + 6) * 3 + 0] = uv_max(0);
+      in.pointlist[(_tn + 6) * 3 + 1] = uv_max(1);
+      in.pointlist[(_tn + 6) * 3 + 2] = uv_max(2);
+
+      in.pointlist[(_tn + 7) * 3 + 0] = uv_min(0);
+      in.pointlist[(_tn + 7) * 3 + 1] = uv_max(1);
+      in.pointlist[(_tn + 7) * 3 + 2] = uv_max(2);
     }
-    s.frame_ids = Eigen::VectorXi::LinSpaced(s.rect_frame_V.rows(), s.mv_num,
-                                             s.mv_num + s.rect_frame_V.rows());
+    in.numberoffacets = s.m_surface_fn + 6;
+    in.facetlist = new tetgenio::facet[in.numberoffacets];
+    for (uint32_t i = 0; i < in.numberoffacets; ++i) {
+      in.facetlist[i].numberofpolygons = 1;
+      in.facetlist[i].numberofholes = 0;
+      in.facetlist[i].holelist = nullptr;
+      in.facetlist[i].polygonlist = new tetgenio::polygon;
+      auto p = in.facetlist[i].polygonlist;
+      p->numberofvertices = 4;
+      p->vertexlist = new int[4];
+      if (i < s.m_surface_fn) {
+        for (uint32_t j = 0; j < 4; ++j) {
+          p->vertexlist[j] = s.mapping_s2t[s.m_surface(i, j)];
+        }
+      }
+    }
+    {
+      int _fn = s.m_surface_fn;
+      int _tn = s.m_surface_vn;
+
+      in.facetlist[_fn + 0].polygonlist->vertexlist[0] = _tn + 0;
+      in.facetlist[_fn + 0].polygonlist->vertexlist[1] = _tn + 1;
+      in.facetlist[_fn + 0].polygonlist->vertexlist[2] = _tn + 2;
+      in.facetlist[_fn + 0].polygonlist->vertexlist[3] = _tn + 3;
+
+      in.facetlist[_fn + 1].polygonlist->vertexlist[0] = _tn + 0;
+      in.facetlist[_fn + 1].polygonlist->vertexlist[1] = _tn + 4;
+      in.facetlist[_fn + 1].polygonlist->vertexlist[2] = _tn + 5;
+      in.facetlist[_fn + 1].polygonlist->vertexlist[3] = _tn + 1;
+
+      in.facetlist[_fn + 2].polygonlist->vertexlist[0] = _tn + 1;
+      in.facetlist[_fn + 2].polygonlist->vertexlist[1] = _tn + 5;
+      in.facetlist[_fn + 2].polygonlist->vertexlist[2] = _tn + 6;
+      in.facetlist[_fn + 2].polygonlist->vertexlist[3] = _tn + 2;
+
+      in.facetlist[_fn + 3].polygonlist->vertexlist[0] = _tn + 2;
+      in.facetlist[_fn + 3].polygonlist->vertexlist[1] = _tn + 6;
+      in.facetlist[_fn + 3].polygonlist->vertexlist[2] = _tn + 7;
+      in.facetlist[_fn + 3].polygonlist->vertexlist[3] = _tn + 3;
+
+      in.facetlist[_fn + 4].polygonlist->vertexlist[0] = _tn + 3;
+      in.facetlist[_fn + 4].polygonlist->vertexlist[1] = _tn + 7;
+      in.facetlist[_fn + 4].polygonlist->vertexlist[2] = _tn + 4;
+      in.facetlist[_fn + 4].polygonlist->vertexlist[3] = _tn + 0;
+
+      in.facetlist[_fn + 5].polygonlist->vertexlist[0] = _tn + 4;
+      in.facetlist[_fn + 5].polygonlist->vertexlist[1] = _tn + 7;
+      in.facetlist[_fn + 5].polygonlist->vertexlist[2] = _tn + 6;
+      in.facetlist[_fn + 5].polygonlist->vertexlist[3] = _tn + 5;
+    }
+    in.numberofholes = 1;
+    in.holelist = new double[3];
+    {
+      auto _t = (s.m_V.row(s.m_T(0, 0)) + s.m_V.row(s.m_T(0, 1)) +
+                 s.m_V.row(s.m_T(0, 2)) + s.m_V.row(s.m_T(0, 3))) /
+                4;
+      in.holelist[0] = _t(0);
+      in.holelist[1] = _t(1);
+      in.holelist[2] = _t(2);
+    }
+  }
+  tetgenbehavior beh;
+  beh.plc = 1;
+  beh.nobisect = 1;
+  tetrahedralize(&beh, &in, &out);
+
+  // generate by tetgen
+  int addinVnum1 = out.numberofpoints - in.numberofpoints;
+  // generate by me 确定现在加还是之前加
+  int addinVnum2 = 8;
+
+  for (uint32_t i = 0; i < addinVnum2 + addinVnum1; ++i) {
+    s.mapping_t2s.push_back(s.mv_num + i);
+    s.mapping_s2t[s.mv_num + i] = s.m_surface_vn + i;
   }
 
-  // Concatenate Vert and Edge
-  MatrixXd V;
-  MatrixXi E;
-  igl::cat(1, V_bnd, s.rect_frame_V, V);
-  E.resize(V.rows(), 2);
-  for (int i = 0; i < E.rows(); i++)
-    E.row(i) << i, i + 1;
-  int acc_bs = 0;
-  for (auto bs : s.bnd_sizes) {
-    E(acc_bs + bs - 1, 1) = acc_bs;
-    acc_bs += bs;
+  s.w_V.resize(s.mv_num + addinVnum1 + addinVnum2, 3);
+  s.w_V.topRows(s.mv_num) = s.m_V;
+  for (uint i = 0; i < addinVnum2 + addinVnum1; ++i) {
+    int _t = s.m_surface_vn + i;
+    s.w_V.row(s.mv_num + i) =
+        Vector3d(out.pointlist[_t * 3 + 0], out.pointlist[_t * 3 + 1],
+                 out.pointlist[_t * 3 + 2]);
   }
-  E(V.rows() - 1, 1) = acc_bs;
-  assert(acc_bs == s.internal_bnd.size());
 
-  MatrixXd H = MatrixXd::Zero(s.component_sizes.size(), 2);
-  {
-    int hole_f = 0;
-    int hole_i = 0;
-    for (auto cs : s.component_sizes) {
-      for (int i = 0; i < 3; i++)
-        H.row(hole_i) += m_uv.row(s.m_T(hole_f, i)); // redoing step 2
-      hole_f += cs;
-      hole_i++;
-    }
+  s.s_T.conservativeResize(out.numberoftetrahedra, 4);
+  for (uint32_t i = 0; i < out.numberoftetrahedra; ++i) {
+    s.s_T.row(i) = Vector4i(s.mapping_t2s[out.tetrahedronlist[i * 4 + 0]],
+                            s.mapping_t2s[out.tetrahedronlist[i * 4 + 1]],
+                            s.mapping_t2s[out.tetrahedronlist[i * 4 + 2]],
+                            s.mapping_t2s[out.tetrahedronlist[i * 4 + 3]]);
   }
-  H /= 3.;
 
-  MatrixXd uv2;
-  igl::triangle::triangulate(V, E, H, std::basic_string<char>("qYYQ"), uv2,
-                             s.s_T);
-  auto bnd_n = s.internal_bnd.size();
+  // todo : tetgen
 
+  // igl::triangle::triangulate(V, E, H, std::basic_string<char>("qYYQ"), uv2,
+  //                           s.s_T);
+  // auto bnd_n = s.internal_bnd.size();
+  /*
   for (auto i = 0; i < s.s_T.rows(); i++)
     for (auto j = 0; j < s.s_T.cols(); j++) {
       auto &x = s.s_T(i, j);
@@ -218,69 +336,68 @@ IGL_INLINE void mesh_improve(igl::my_scaf::SCAFData &s) {
 
   igl::cat(1, s.m_T, s.s_T, s.w_T);
   s.w_uv.conservativeResize(m_uv.rows() - bnd_n + uv2.rows(), 2);
-  s.w_uv.bottomRows(uv2.rows() - bnd_n) = uv2.bottomRows(-bnd_n + uv2.rows());
-
+  */
   update_scaffold(s);
+  compute_my_mesh_grad_inv_matrix(s.w_V, s.s_T, s.s_Grad);
 
   // after_mesh_improve
-  compute_scaffold_gradient_matrix(s, s.Dx_s, s.Dy_s);
+  // compute_scaffold_gradient_matrix(s, s.Dx_s, s.Dy_s);
 
+  /*
   s.Dx_s.makeCompressed();
   s.Dy_s.makeCompressed();
   s.Dz_s.makeCompressed();
   s.Ri_s = MatrixXd::Zero(s.Dx_s.rows(), s.dim * s.dim);
   s.Ji_s.resize(s.Dx_s.rows(), s.dim * s.dim);
   s.W_s.resize(s.Dx_s.rows(), s.dim * s.dim);
+  */
 }
 
 IGL_INLINE void add_new_patch(igl::my_scaf::SCAFData &s,
                               const Eigen::MatrixXd &V_ref,
                               const Eigen::MatrixXi &F_ref,
-                              const Eigen::RowVectorXd &center,
+                              const Eigen::MatrixXi &surface,
                               const Eigen::MatrixXd &uv_init) {
   using namespace std;
   using namespace Eigen;
 
   assert(uv_init.rows() != 0);
   Eigen::VectorXd M;
-  igl::doublearea(V_ref, F_ref, M);
-  s.mesh_measure += M.sum() / 2;
-
-  Eigen::VectorXi bnd;
-  Eigen::MatrixXd bnd_uv;
-
-  std::vector<std::vector<int>> all_bnds;
-  igl::boundary_loop(F_ref, all_bnds);
-  int num_holes = all_bnds.size() - 1;
-
-  s.component_sizes.push_back(F_ref.rows());
-
-  MatrixXd m_uv = s.w_uv.topRows(s.mv_num);
-  igl::cat(1, m_uv, uv_init, s.w_uv);
+  igl::volume(V_ref, F_ref, M);
+  s.mesh_measure += M.sum();
 
   s.m_M.conservativeResize(s.mf_num + M.size());
-  s.m_M.bottomRows(M.size()) = M / 2;
+  s.m_M.bottomRows(M.size()) = M;
 
-  for (auto cur_bnd : all_bnds) {
-    s.internal_bnd.conservativeResize(s.internal_bnd.size() + cur_bnd.size());
-    s.internal_bnd.bottomRows(cur_bnd.size()) =
-        Map<ArrayXi>(cur_bnd.data(), cur_bnd.size()) + s.mv_num;
-    s.bnd_sizes.push_back(cur_bnd.size());
-  }
-
-  s.m_T.conservativeResize(s.mf_num + F_ref.rows(), 3);
-  s.m_T.bottomRows(F_ref.rows()) = F_ref.array() + s.mv_num;
+  s.m_T.conservativeResize(s.mf_num + F_ref.rows(), 4);
+  s.m_T.bottomRows(F_ref.rows()) = F_ref;
   s.mf_num += F_ref.rows();
 
-  s.m_V.conservativeResize(s.mv_num + V_ref.rows(), 3);
-  s.m_V.bottomRows(V_ref.rows()) = V_ref;
+  s.m_Vref.conservativeResize(s.mv_num + V_ref.rows(), 3);
+  s.m_Vref.bottomRows(V_ref.rows()) = V_ref;
   s.mv_num += V_ref.rows();
 
-  s.rect_frame_V = MatrixXd();
+  s.m_V.conservativeResize(s.m_Vref.rows(), 3);
+  s.m_V.bottomRows(s.m_Vref.rows()) = uv_init;
+
+  s.m_surface.conservativeResize(surface.rows(), 3);
+  s.m_surface.bottomRows(surface.rows()) = surface;
+  s.m_surface_fn = s.m_surface.rows();
+  std::unordered_set<uint32_t> uniqueset;
+  for (uint32_t i = 0; i < s.m_surface_fn; ++i) {
+    for (uint32_t j = 0; j < 3; ++j) {
+      uniqueset.insert(surface(i, j));
+    }
+  }
+  s.m_surface_vn = uniqueset.size();
+  s.mapping_tetgen2scaf.assign(uniqueset.begin(), uniqueset.end());
+  for (uint32_t i = 0; i < s.mapping_tetgen2scaf.size(); ++i) {
+    s.mapping_scaf2tetgen.insert({s.mapping_tetgen2scaf[i], i});
+  }
 
   mesh_improve(s);
 }
-
+/*
 IGL_INLINE void compute_jacobians(SCAFData &s, const Eigen::MatrixXd &V_new,
                                   bool whole) {
   auto comp_J2 =
@@ -299,7 +416,8 @@ IGL_INLINE void compute_jacobians(SCAFData &s, const Eigen::MatrixXd &V_new,
   if (whole)
     comp_J2(V_new, s.Dx_s, s.Dy_s, s.Ji_s);
 }
-
+*/
+/*
 IGL_INLINE double
 compute_energy_from_jacobians(const Eigen::MatrixXd &Ji,
                               const Eigen::VectorXd &areas,
@@ -309,28 +427,70 @@ compute_energy_from_jacobians(const Eigen::MatrixXd &Ji,
     energy = -4; // comply with paper description
   return energy + igl::mapping_energy_with_jacobians(Ji, areas, energy_type, 0);
 }
+*/
 
 IGL_INLINE double compute_soft_constraint_energy(const SCAFData &s) {
   double e = 0;
   for (auto const &x : s.soft_cons)
-    e += s.soft_const_p * (x.second - s.w_uv.row(x.first)).squaredNorm();
+    e += s.soft_const_p * (x.second - s.w_V.row(x.first)).squaredNorm();
 
   return e;
 }
 
-IGL_INLINE double compute_energy(SCAFData &s, const Eigen::MatrixXd &w_uv,
+IGL_INLINE double compute_energy(SCAFData &s, const Eigen::MatrixXd &w_V,
                                  bool whole) {
-  if (w_uv.rows() != s.v_num)
+  using namespace Eigen;
+  double energy = 0;
+  if (w_V.rows() != s.sv_num + s.mv_num)
     assert(!whole);
-  compute_jacobians(s, w_uv, whole);
-  double energy = compute_energy_from_jacobians(s.Ji_m, s.m_M, s.slim_energy);
+  Matrix3d P, Q, J;
+  Vector3d dp1, dp2, dp3;
+  for (uint32_t i = 0; i < s.mf_num; ++i) {
+    dp1 = w_V.row(s.m_T(i, 1)) - w_V.row(s.m_T(i, 0));
+    dp2 = w_V.row(s.m_T(i, 2)) - w_V.row(s.m_T(i, 0));
+    dp3 = w_V.row(s.m_T(i, 3)) - w_V.row(s.m_T(i, 0));
+    Q.row(0) = dp1, P.row(1) = dp2, P.row(2) = dp3;
+    Q = Q.transpose();
+    P = s.m_GradRef.block(i * 3, 0, 3, 3);
+    J = Q * P;
+    auto det = J.determinant();
+    Matrix3d ri, vi, ui, ti;
+    Vector3d sing;
+    polar_svd(J, ri, ti, ui, sing, vi);
+    double s1 = sing(0);
+    double s2 = sing(1);
+    double s3 = sing(2);
 
-  if (whole)
-    energy += compute_energy_from_jacobians(s.Ji_s, s.s_M, s.scaf_energy);
+    energy += s.m_M(i) * (pow(s1, 2) + pow(s1, -2) + pow(s2, 2) + pow(s2, -2) +
+                          pow(s3, 2) + pow(s3, -2));
+  }
+
+  if (whole) {
+    for (uint32_t i = 0; i < s.sf_num; ++i) {
+      dp1 = w_V.row(s.s_T(i, 1)) - w_V.row(s.s_T(i, 0));
+      dp2 = w_V.row(s.s_T(i, 2)) - w_V.row(s.s_T(i, 0));
+      dp3 = w_V.row(s.s_T(i, 3)) - w_V.row(s.s_T(i, 0));
+      Q.row(0) = dp1, P.row(1) = dp2, P.row(2) = dp3;
+      Q = Q.transpose();
+      P = s.s_Grad.block(i * 3, 0, 3, 3);
+      J = Q * P;
+      auto det = J.determinant();
+      Matrix3d ri, vi, ui, ti;
+      Vector3d sing;
+      polar_svd(J, ri, ti, ui, sing, vi);
+      double s1 = sing(0);
+      double s2 = sing(1);
+      double s3 = sing(2);
+
+      energy += s.s_M(i) * (pow(s1, 2) + pow(s1, -2) + pow(s2, 2) +
+                            pow(s2, -2) + pow(s3, 2) + pow(s3, -2));
+    }
+  }
   energy += compute_soft_constraint_energy(s);
   return energy;
 }
 
+/*
 IGL_INLINE void buildAm(const Eigen::VectorXd &sqrt_M,
                         const Eigen::SparseMatrix<double> &Dx,
                         const Eigen::SparseMatrix<double> &Dy,
@@ -377,7 +537,9 @@ get_complement(const Eigen::VectorXi &bnd_ids, int v_n,
     unknown_ids(assign++) = i++;
   assert(assign + bnd_ids.size() == v_n);
 }
+*/
 
+/*
 IGL_INLINE void build_surface_linear_system(const SCAFData &s,
                                             Eigen::SparseMatrix<double> &L,
                                             Eigen::VectorXd &rhs) {
@@ -453,7 +615,9 @@ IGL_INLINE void build_surface_linear_system(const SCAFData &s,
     }
   }
 }
+*/
 
+/*
 IGL_INLINE void build_scaffold_linear_system(const SCAFData &s,
                                              Eigen::SparseMatrix<double> &L,
                                              Eigen::VectorXd &rhs) {
@@ -505,7 +669,9 @@ IGL_INLINE void build_scaffold_linear_system(const SCAFData &s,
 
   rhs = Aut * (frhs - Ae * known_pos);
 }
+*/
 
+/*
 IGL_INLINE void build_weighted_arap_system(SCAFData &s,
                                            Eigen::SparseMatrix<double> &L,
                                            Eigen::VectorXd &rhs) {
@@ -530,7 +696,9 @@ IGL_INLINE void build_weighted_arap_system(SCAFData &s,
   rhs = rhs_m + rhs_s;
   L.makeCompressed();
 }
+*/
 
+/*
 IGL_INLINE void solve_weighted_arap(SCAFData &s, Eigen::MatrixXd &uv) {
   using namespace Eigen;
   using namespace std;
@@ -575,15 +743,170 @@ IGL_INLINE void solve_weighted_arap(SCAFData &s, Eigen::MatrixXd &uv) {
 
   uv = Map<Matrix<double, -1, -1, Eigen::ColMajor>>(Uc.data(), v_n, dim);
 }
+*/
 
 IGL_INLINE double perform_iteration(SCAFData &s) {
-  Eigen::MatrixXd V_out = s.w_uv;
-  compute_jacobians(s, V_out, true);
+  using namespace Eigen;
+  Eigen::MatrixXd V_out = s.w_V;
+  // compute_jacobians(s, V_out, true);
+  /*
   igl::slim_update_weights_and_closest_rotations_with_jacobians(
       s.Ji_m, s.slim_energy, 0, s.W_m, s.Ri_m);
   igl::slim_update_weights_and_closest_rotations_with_jacobians(
       s.Ji_s, s.scaf_energy, 0, s.W_s, s.Ri_s);
   solve_weighted_arap(s, V_out);
+  */
+
+  MatrixXd A;
+  // SparseMatrix<double> A;
+  VectorXd b;
+  A.resize(s.w_V.rows() * 3, 3);
+  b.resize(s.w_V.rows() * 3);
+  uint32_t _disp = s.w_V.rows();
+
+  Matrix3d Q;
+  Vector3d dp1, dp2, dp3;
+  for (uint32_t i = 0; i < s.mv_num; ++i) {
+    Q.row(0) = V_out.row(s.m_T(i, 1)) - V_out.row(s.m_T(i, 0));
+    Q.row(1) = V_out.row(s.m_T(i, 2)) - V_out.row(s.m_T(i, 0));
+    Q.row(2) = V_out.row(s.m_T(i, 3)) - V_out.row(s.m_T(i, 0));
+    auto J = Q * s.m_GradRef.block(i * 3, 0, 3, 3);
+    MatrixXd P(4, 3);
+    P.block(1, 0, 3, 3) = s.m_GradRef.block(i * 3, 0, 3, 3);
+    P.row(0) =
+        Vector3d(-P(1, 0) - P(2, 0) - P(3, 0), -P(1, 1) - P(2, 1) - P(3, 1),
+                 -P(1, 2) - P(2, 2) - P(3, 2));
+
+    Matrix3d ui, vi, ri, ti;
+    Vector3d sing;
+    polar_svd(J, ri, ti, ui, sing, vi);
+    Vector3d new_sing;
+    double new_s0, new_s1, new_s2;
+    new_s0 = sqrt(1 + 1 / sing(0) + 1 / pow(sing(0), 2) + 1 / pow(sing(0), 3));
+    new_s1 = sqrt(1 + 1 / sing(1) + 1 / pow(sing(1), 2) + 1 / pow(sing(1), 3));
+    new_s2 = sqrt(1 + 1 / sing(2) + 1 / pow(sing(2), 2) + 1 / pow(sing(2), 3));
+    new_sing << new_s0, new_s1, new_s2;
+    Matrix3d Wi;
+    Wi = ui * new_sing.asDiagonal() * ui.transpose();
+    MatrixXd WW, PP;
+    WW = Wi.transpose() * Wi;
+    PP = P * P.transpose();
+
+    MatrixXd tmpA(12, 12);
+    VectorXd tmpb(12);
+    VectorXd tmpx(12);
+    for (uint32_t i0 = 0; i0 < 3; ++i0) {
+      for (uint32_t i1 = 0; i1 < 4; ++i1) {
+        tmpx(i0 * 4 + i1) = s.w_V(s.m_T(i, i1), i0);
+      }
+    }
+
+    for (uint32_t i0 = 0; i0 < 12; ++i0) {
+      for (uint32_t i1 = 0; i1 < 12; ++i1) {
+        tmpA(i0, i1) = WW(i0 / 4, i1 / 4) * PP(i0 % 3, i1 % 3);
+      }
+    }
+    tmpb = -tmpA * tmpx;
+    double h[9] = {
+        ri(0, 0) * Wi(0, 0) + ri(1, 0) * Wi(0, 1) + ri(2, 0) * Wi(0, 2),
+        ri(0, 1) * Wi(0, 0) + ri(1, 1) * Wi(0, 1) + ri(2, 1) * Wi(0, 2),
+        ri(0, 2) * Wi(0, 0) + ri(1, 2) * Wi(0, 1) + ri(2, 2) * Wi(0, 2),
+        ri(0, 0) * Wi(1, 0) + ri(1, 0) * Wi(1, 1) + ri(2, 0) * Wi(1, 2),
+        ri(0, 1) * Wi(1, 0) + ri(1, 1) * Wi(1, 1) + ri(2, 1) * Wi(1, 2),
+        ri(0, 2) * Wi(1, 0) + ri(1, 2) * Wi(1, 1) + ri(2, 2) * Wi(1, 2),
+        ri(0, 0) * Wi(2, 0) + ri(1, 0) * Wi(2, 1) + ri(2, 0) * Wi(2, 2),
+        ri(0, 1) * Wi(2, 0) + ri(1, 1) * Wi(2, 1) + ri(2, 1) * Wi(2, 2),
+        ri(0, 2) * Wi(2, 0) + ri(1, 2) * Wi(2, 1) + ri(2, 2) * Wi(2, 2)};
+    for (uint32_t i0 = 0; i0 < 12; ++i0) {
+      for (uint32_t i1 = 0; i1 < 9; ++i1) {
+        tmpb(i0) -= Wi(i1 / 3, i0 / 4) * h[i1] * P(i0 % 4, i1 % 3) *
+                    (i0 % 4 == 0 ? (-1) : 1);
+      }
+    }
+
+    for (uint32_t i0 = 0; i0 < 12; ++i0) {
+      for (uint32_t i1 = 0; i1 < 32; ++i1) {
+        A(s.m_T(i, i0 % 4) + (i0 / 3) * _disp,
+          s.m_T(i, i1 % 4) + (i1 / 3) * _disp) += tmpA(i0, i1) * s.m_M(i);
+      }
+      b(s.m_T(i, i0 % 4) + (i0 / 3) * _disp) += tmpb(i0) * s.m_M(i);
+    }
+  }
+
+  for (uint32_t i = 0; i < s.sv_num; ++i) {
+    Q.row(0) = V_out.row(s.s_T(i, 1)) - V_out.row(s.s_T(i, 0));
+    Q.row(1) = V_out.row(s.s_T(i, 2)) - V_out.row(s.s_T(i, 0));
+    Q.row(2) = V_out.row(s.s_T(i, 3)) - V_out.row(s.s_T(i, 0));
+    auto J = Q * s.s_Grad.block(i * 3, 0, 3, 3);
+    MatrixXd P(4, 3);
+    P.block(1, 0, 3, 3) = s.m_GradRef.block(i * 3, 0, 3, 3);
+    P.row(0) =
+        Vector3d(-P(1, 0) - P(2, 0) - P(3, 0), -P(1, 1) - P(2, 1) - P(3, 1),
+                 -P(1, 2) - P(2, 2) - P(3, 2));
+
+    Matrix3d ui, vi, ri, ti;
+    Vector3d sing;
+    polar_svd(J, ri, ti, ui, sing, vi);
+    Vector3d new_sing;
+    double new_s0, new_s1, new_s2;
+    new_s0 = sqrt(1 + 1 / sing(0) + 1 / pow(sing(0), 2) + 1 / pow(sing(0), 3));
+    new_s1 = sqrt(1 + 1 / sing(1) + 1 / pow(sing(1), 2) + 1 / pow(sing(1), 3));
+    new_s2 = sqrt(1 + 1 / sing(2) + 1 / pow(sing(2), 2) + 1 / pow(sing(2), 3));
+    new_sing << new_s0, new_s1, new_s2;
+    Matrix3d Wi;
+    Wi = ui * new_sing.asDiagonal() * ui.transpose();
+    MatrixXd WW, PP;
+    WW = Wi.transpose() * Wi;
+    PP = P * P.transpose();
+
+    MatrixXd tmpA(12, 12);
+    VectorXd tmpb(12);
+    VectorXd tmpx(12);
+    for (uint32_t i0 = 0; i0 < 3; ++i0) {
+      for (uint32_t i1 = 0; i1 < 4; ++i1) {
+        tmpx(i0 * 4 + i1) = s.w_V(s.m_T(i, i1), i0);
+      }
+    }
+
+    for (uint32_t i0 = 0; i0 < 12; ++i0) {
+      for (uint32_t i1 = 0; i1 < 12; ++i1) {
+        tmpA(i0, i1) = WW(i0 / 4, i1 / 4) * PP(i0 % 3, i1 % 3);
+      }
+    }
+    tmpb = -tmpA * tmpx;
+    double h[9] = {
+        ri(0, 0) * Wi(0, 0) + ri(1, 0) * Wi(0, 1) + ri(2, 0) * Wi(0, 2),
+        ri(0, 1) * Wi(0, 0) + ri(1, 1) * Wi(0, 1) + ri(2, 1) * Wi(0, 2),
+        ri(0, 2) * Wi(0, 0) + ri(1, 2) * Wi(0, 1) + ri(2, 2) * Wi(0, 2),
+        ri(0, 0) * Wi(1, 0) + ri(1, 0) * Wi(1, 1) + ri(2, 0) * Wi(1, 2),
+        ri(0, 1) * Wi(1, 0) + ri(1, 1) * Wi(1, 1) + ri(2, 1) * Wi(1, 2),
+        ri(0, 2) * Wi(1, 0) + ri(1, 2) * Wi(1, 1) + ri(2, 2) * Wi(1, 2),
+        ri(0, 0) * Wi(2, 0) + ri(1, 0) * Wi(2, 1) + ri(2, 0) * Wi(2, 2),
+        ri(0, 1) * Wi(2, 0) + ri(1, 1) * Wi(2, 1) + ri(2, 1) * Wi(2, 2),
+        ri(0, 2) * Wi(2, 0) + ri(1, 2) * Wi(2, 1) + ri(2, 2) * Wi(2, 2)};
+    for (uint32_t i0 = 0; i0 < 12; ++i0) {
+      for (uint32_t i1 = 0; i1 < 9; ++i1) {
+        tmpb(i0) -= Wi(i1 / 3, i0 / 4) * h[i1] * P(i0 % 4, i1 % 3) *
+                    (i0 % 4 == 0 ? (-1) : 1);
+      }
+    }
+
+    for (uint32_t i0 = 0; i0 < 12; ++i0) {
+      for (uint32_t i1 = 0; i1 < 32; ++i1) {
+        A(s.s_T(i, i0 % 4) + (i0 / 3) * _disp,
+          s.s_T(i, i1 % 4) + (i1 / 3) * _disp) += tmpA(i0, i1) * s.s_M(i);
+      }
+      b(s.s_T(i, i0 % 4) + (i0 / 3) * _disp) += tmpb(i0) * s.s_M(i);
+    }
+  }
+  SimplicialLDLT<Eigen::Matrix<double, Dynamic, Dynamic>> solver;
+  auto d = solver.compute(A).solve(b);
+
+  MatrixXd disp = s.w_V;
+  disp.col(0) = d.block(0, 0, V_out.rows(), 1);
+  disp.col(1) = d.block(V_out.rows(), 0, V_out.rows(), 1);
+  disp.col(2) = d.block(V_out.rows()*2, 0, V_out.rows(), 1);
+  V_out = s.w_V + disp;
   auto whole_E = [&s](Eigen::MatrixXd &uv) {
     return compute_energy(s, uv, true);
   };
@@ -593,7 +916,7 @@ IGL_INLINE double perform_iteration(SCAFData &s) {
     igl::cat(1, s.m_T, s.s_T, w_T);
   else
     w_T = s.s_T;
-  return igl::flip_avoiding_line_search(w_T, s.w_uv, V_out, whole_E, -1) /
+  return igl::flip_avoiding_line_search(w_T, s.w_V, V_out, whole_E, -1) /
          s.mesh_measure;
 }
 
@@ -604,7 +927,7 @@ IGL_INLINE void igl::my_scaf::scaf_precompute(
     double soft_p) {
   Eigen::MatrixXd CN;
   Eigen::MatrixXi FN;
-  igl::my_scaf::add_new_patch(data, V, F, Eigen::RowVector2d(0, 0), V_init);
+  igl::my_scaf::add_new_patch(data, V, F, data.m_surface, V_init);
   data.soft_const_p = soft_p;
   for (int i = 0; i < b.rows(); i++)
     data.soft_cons[b(i)] = bc.row(i);
@@ -613,6 +936,10 @@ IGL_INLINE void igl::my_scaf::scaf_precompute(
   auto &s = data;
 
   if (!data.has_pre_calc) {
+    //
+    compute_my_mesh_grad_inv_matrix(s.m_Vref, s.m_T, s.m_GradRef);
+    // compute_my_mesh_jacobian_matrix(s.s_V, s.s_T, s.s_J);
+    /*
     int v_n = s.mv_num + s.sv_num;
     int f_n = s.mf_num + s.sf_num;
     int dim = s.dim;
@@ -648,6 +975,7 @@ IGL_INLINE void igl::my_scaf::scaf_precompute(
     s.Ri_s = Eigen::MatrixXd::Zero(s.Dx_s.rows(), dim * dim);
     s.Ji_s.resize(s.Dx_s.rows(), dim * dim);
     s.W_s.resize(s.Dx_s.rows(), dim * dim);
+    */
 
     data.has_pre_calc = true;
   }
@@ -657,12 +985,12 @@ IGL_INLINE Eigen::MatrixXd igl::my_scaf::scaf_solve(igl::my_scaf::SCAFData &s,
                                                     int iter_num) {
   using namespace std;
   using namespace Eigen;
-  s.energy = igl::my_scaf::compute_energy(s, s.w_uv, false) / s.mesh_measure;
+  s.energy = igl::my_scaf::compute_energy(s, s.w_V, false) / s.mesh_measure;
 
   for (int it = 0; it < iter_num; it++) {
     s.total_energy =
-        igl::my_scaf::compute_energy(s, s.w_uv, true) / s.mesh_measure;
-    s.rect_frame_V = Eigen::MatrixXd();
+        igl::my_scaf::compute_energy(s, s.w_V, true) / s.mesh_measure;
+    // s.rect_frame_V = Eigen::MatrixXd();
     igl::my_scaf::mesh_improve(s);
 
     double new_weight = s.mesh_measure * s.energy / (s.sf_num * 100);
@@ -671,12 +999,13 @@ IGL_INLINE Eigen::MatrixXd igl::my_scaf::scaf_solve(igl::my_scaf::SCAFData &s,
 
     s.total_energy = igl::my_scaf::perform_iteration(s);
 
-    s.energy = igl::my_scaf::compute_energy(s, s.w_uv, false) / s.mesh_measure;
+    s.energy = igl::my_scaf::compute_energy(s, s.w_V, false) / s.mesh_measure;
   }
 
-  return s.w_uv.topRows(s.mv_num);
+  return s.m_V;
 }
 
+/*
 IGL_INLINE void igl::my_scaf::scaf_system(igl::my_scaf::SCAFData &s,
                                           Eigen::SparseMatrix<double> &L,
                                           Eigen::VectorXd &rhs) {
@@ -698,6 +1027,141 @@ IGL_INLINE void igl::my_scaf::scaf_system(igl::my_scaf::SCAFData &s,
       s.Ji_s, s.scaf_energy, 0, s.W_s, s.Ri_s);
 
   igl::my_scaf::build_weighted_arap_system(s, L, rhs);
+}
+*/
+
+/*
+IGL_INLINE void igl::my_scaf::build_scaffold_geometry_frame(
+    const Eigen::Vector3d &uv_min, const Eigen::Vector3d &uv_max,
+    uint32_t &v_num, uint32_t &e_num, std::vector<double> &coords,
+    std::vector<uint32_t> &edges, double ref_len = 1) {
+  using namespace Eigen;
+  double lenx = uv_max(0) - uv_min(0), leny = uv_max(1) - uv_min(1),
+         lenz = uv_max(2) - uv_min(2);
+
+  // x_segment_node_num
+  uint32_t xsnn = std::floor((lenx - 2 >= 0) ? (lenx - 2) : 0),
+           ysnn = std::floor((leny - 2 >= 0) ? (leny - 2) : 0),
+           zsnn = std::floor((lenz - 2 >= 0) ? (lenz - 2) : 0);
+  uint32_t xmaxn = xsnn + 1, ymaxn = ysnn + 1, zmaxn = zsnn + 1;
+
+  double dx = lenx / (xsnn + 1), dy = leny / (ysnn + 1), dz = lenz / (zsnn + 1);
+
+  v_num = ((xsnn + 2) * (ysnn + 2) + (xsnn + 2) * zsnn + ysnn * zsnn) * 2;
+  e_num = (xsnn + 1 + ysnn + 1 + zsnn + 1) * 4;
+
+  coords.resize(v_num * 3), edges.resize(e_num * 2);
+  uint32_t disp = 0;
+  for (uint32_t i = 0; i < ysnn + 2; ++i) {
+    for (uint32_t j = 0; j < xsnn + 2; ++j) {
+      auto cur_coord = uv_min + j * Vector3d(dx, 0, 0) + i * Vector3d(0, dy, 0);
+      coords[disp * 3 + 0] = cur_coord(0);
+      coords[disp * 3 + 1] = cur_coord(1);
+      coords[disp * 3 + 2] = cur_coord(2);
+      disp++;
+    }
+  }
+  for (uint32_t i = 0; i < zsnn; ++i) {
+    for (uint32_t j = 0; j < (xsnn + 2); ++j) {
+      auto cur_coord = uv_min + j * Vector3d(dx, 0, 0) + i * Vector3d(0, 0, dz);
+      coords[disp * 3 + 0] = cur_coord(0);
+      coords[disp * 3 + 1] = cur_coord(1);
+      coords[disp * 3 + 2] = cur_coord(2);
+      disp++;
+    }
+    for (uint32_t j = 1; j < ysnn; ++j) {
+      auto cur_coord = uv_min + j * Vector3d(0, dy, 0) + i * Vector3d(0, 0, dz);
+      coords[disp * 3 + 0] = cur_coord(0);
+      coords[disp * 3 + 1] = cur_coord(1);
+      coords[disp * 3 + 2] = cur_coord(2);
+      disp++;
+    }
+    for (uint32_t j = 0; j < (xsnn + 2); ++j) {
+      auto cur_coord = uv_min + j * Vector3d(dx, 0, 0) +
+                       i * Vector3d(0, 0, dz) + ymaxn * Vector3d(0, dy, 0);
+      coords[disp * 3 + 0] = cur_coord(0);
+      coords[disp * 3 + 1] = cur_coord(1);
+      coords[disp * 3 + 2] = cur_coord(2);
+      disp++;
+    }
+    for (uint32_t j = 0; j < xsnn; ++j) {
+      auto cur_coord = uv_min + j * Vector3d(0, dy, 0) +
+                       i * Vector3d(0, 0, dz) + xmaxn * Vector3d(dx, 0, 0);
+      coords[disp * 3 + 0] = cur_coord(0);
+      coords[disp * 3 + 1] = cur_coord(1);
+      coords[disp * 3 + 2] = cur_coord(2);
+      disp++;
+    }
+  }
+  for (uint32_t i = 0; i < ysnn + 2; ++i) {
+    for (uint32_t j = 0; j < xsnn + 2; ++j) {
+      auto cur_coord = uv_min + j * Vector3d(dx, 0, 0) +
+                       i * Vector3d(0, dy, 0) + zmaxn * Vector3d(0, 0, dz);
+      coords[disp * 3 + 0] = cur_coord(0);
+      coords[disp * 3 + 1] = cur_coord(1);
+      coords[disp * 3 + 2] = cur_coord(2);
+      disp++;
+    }
+  }
+
+  disp = 0;
+  for (uint32_t i = 0; i < xmaxn; ++i) {
+    edges[disp * 2 + 0] = i;
+    edges[disp * 2 + 1] = i + 1;
+    disp++;
+  }
+  for (uint32_t i = 0; i < ymaxn; ++i) {
+    edges[disp * 2 + 0] = i * (xmaxn + 1);
+    edges[disp * 2 + 1] = (i + 1) * (xmaxn + 1);
+    disp++;
+  }
+  for (uint32_t i = 0; i < xmaxn; ++i) {
+    edges[disp * 2 + 0] = i + ymaxn * (xmaxn + 1);
+    edges[disp * 2 + 1] = i + 1 + ymaxn * (xmaxn + 1);
+    disp++;
+  }
+  for (uint32_t i = 0; i < ymaxn; ++i) {
+    edges[disp * 2 + 0] = i * (xmaxn + 1);
+    edges[disp * 2 + 1] = (i + 1) * (xmaxn + 1);
+    disp++;
+  }
+}
+*/
+
+/*
+IGL_INLINE void igl::my_scaf::compute_my_mesh_grad_matrix(
+    const Eigen::MatrixXd &V, const Eigen::MatrixXi &T, Eigen::MatrixXd &G) {
+  uint32_t cnum = T.rows(), vnum = V.rows();
+  G.conservativeResize(cnum, 9);
+
+  for (uint32_t i = 0; i < cnum; ++i) {
+    for (uint32_t j = 1; j < 4; ++j) {
+      auto dp = V.row(T(i, j)) - V.row(T(i, 0));
+      G(i, (j - 1) * 3 + 0) = dp(0);
+      G(i, (j - 1) * 3 + 1) = dp(1);
+      G(i, (j - 1) * 3 + 2) = dp(2);
+    }
+  }
+}
+*/
+
+IGL_INLINE void igl::my_scaf::compute_my_mesh_grad_inv_matrix(
+    const Eigen::MatrixXd &V, const Eigen::MatrixXi &T, Eigen::MatrixXd &G) {
+  using namespace Eigen;
+  uint32_t cnum = T.rows(), vnum = V.rows();
+  G.conservativeResize(cnum * 3, 3);
+
+  Matrix3d P;
+  Vector3d dp1, dp2, dp3;
+  for (uint32_t i = 0; i < cnum; ++i) {
+    dp1 = V.row(T(i, 1)) - V.row(T(i, 0));
+    dp2 = V.row(T(i, 2)) - V.row(T(i, 0));
+    dp3 = V.row(T(i, 3)) - V.row(T(i, 0));
+    P.row(0) = dp1, P.row(1) = dp2, P.row(2) = dp3;
+    P = P.transpose();
+    P = P.inverse();
+    G.block(i * 3, 0, 3, 3) = P; // P.block(0, 0, 3, 3);
+  }
 }
 
 } // namespace my_scaf

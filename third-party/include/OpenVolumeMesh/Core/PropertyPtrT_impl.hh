@@ -42,7 +42,7 @@ namespace OpenVolumeMesh {
 
 template <class PropT, typename Entity>
 PropertyPtr<PropT,Entity>::PropertyPtr(PropT* _ptr, ResourceManager& _resMan, PropHandleT<Entity> _handle) :
-    ptr::shared_ptr<PropT>(_ptr), BaseProperty(&_resMan) {
+    ptr::shared_ptr<PropT>(_ptr), BaseProperty(_resMan) {
     ptr::shared_ptr<PropT>::get()->set_handle(_handle);
 }
 
@@ -57,20 +57,6 @@ PropertyPtr<PropT,Entity>::~PropertyPtr() {
     if(resMan_ && !persistent() && ptr::shared_ptr<PropT>::use_count() == 2) {
         resMan_->release_property(PropHandleT<Entity>(handle().idx()));
     }
-}
-
-template <class PropT, typename Entity>
-void PropertyPtr<PropT,Entity>::assign_values_from(const BaseProperty *other) {
-    auto _other = static_cast<const PropertyPtr<PropT,Entity>*>(other);
-    // FIXME: would be nice to perform a type check here
-    ptr::shared_ptr<PropT>::get()->data_vector() = _other->get()->data_vector();
-}
-
-template <class PropT, typename Entity>
-void PropertyPtr<PropT,Entity>::move_values_from(BaseProperty *other) {
-    auto _other = static_cast<PropertyPtr<PropT,Entity>*>(other);
-    // FIXME: would be nice to perform a type check here
-    ptr::shared_ptr<PropT>::get()->data_vector() = std::move(_other->get()->data_vector());
 }
 
 template <class PropT, typename Entity>

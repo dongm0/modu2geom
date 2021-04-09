@@ -1,4 +1,3 @@
-#pragma once
 /*===========================================================================*\
  *                                                                           *
  *                            OpenVolumeMesh                                 *
@@ -33,10 +32,18 @@
  *                                                                           *
 \*===========================================================================*/
 
-#include "../Core/Iterators.hh"
-#include "OpenVolumeMesh/Config/Export.hh"
+/*===========================================================================*\
+ *                                                                           *
+ *   $Revision$                                                         *
+ *   $Date$                    *
+ *   $LastChangedBy$                                                *
+ *                                                                           *
+\*===========================================================================*/
 
-#include <array>
+#ifndef TETRAHEDRALMESHITERATORS_HH
+#define TETRAHEDRALMESHITERATORS_HH
+
+#include "../Core/Iterators.hh"
 
 namespace OpenVolumeMesh {
 
@@ -49,7 +56,7 @@ class TetrahedralMeshTopologyKernel;
  *
  */
 
-class OVM_EXPORT TetVertexIter : public BaseCirculator<CellHandle,
+class TetVertexIter : public BaseCirculator<CellHandle,
     VertexHandle> {
 private:
     typedef BaseCirculator<CellHandle,
@@ -101,8 +108,10 @@ public:
     TetVertexIter& operator--();
 
 private:
-    std::array<VertexHandle, 4> vertices_;
+    std::vector<VertexHandle> vertices_;
     size_t cur_index_;
 };
 
 } // Namespace OpenVolumeMesh
+
+#endif /* TETRAHEDRALMESHITERATORS_HH */

@@ -38,7 +38,6 @@
 #include <stdexcept>
 #include <string>
 #include <typeinfo>
-#include <map>
 
 #include "Entities.hh"
 #include "PropertyHandles.hh"
@@ -54,56 +53,43 @@ class ResourceManager;
 template <class T>
 const std::string typeName();
 
-template <> OVM_EXPORT const std::string typeName<int>();
-template <> OVM_EXPORT const std::string typeName<unsigned int>();
-template <> OVM_EXPORT const std::string typeName<short>();
-template <> OVM_EXPORT const std::string typeName<long>();
-template <> OVM_EXPORT const std::string typeName<unsigned long>();
-template <> OVM_EXPORT const std::string typeName<char>();
-template <> OVM_EXPORT const std::string typeName<unsigned char>();
-template <> OVM_EXPORT const std::string typeName<bool>();
-template <> OVM_EXPORT const std::string typeName<float>();
-template <> OVM_EXPORT const std::string typeName<double>();
-template <> OVM_EXPORT const std::string typeName<std::string>();
-template <> OVM_EXPORT const std::string typeName<std::map<HalfEdgeHandle, int> >();
-template <> OVM_EXPORT const std::string typeName<std::vector<double> >();
-template <> OVM_EXPORT const std::string typeName<std::vector<VertexHandle> >();
-template <> OVM_EXPORT const std::string typeName<std::vector<HalfFaceHandle> >();
-template <> OVM_EXPORT const std::string typeName<std::vector<std::vector<HalfFaceHandle> > >();
+template <> const std::string typeName<int>();
+template <> const std::string typeName<unsigned int>();
+template <> const std::string typeName<short>();
+template <> const std::string typeName<long>();
+template <> const std::string typeName<unsigned long>();
+template <> const std::string typeName<char>();
+template <> const std::string typeName<unsigned char>();
+template <> const std::string typeName<bool>();
+template <> const std::string typeName<float>();
+template <> const std::string typeName<double>();
+template <> const std::string typeName<std::string>();
+template <>  const std::string typeName<std::map<HalfEdgeHandle, int> >();
+template <>  const std::string typeName<std::vector<double> >();
+template <>  const std::string typeName<std::vector<VertexHandle> >();
+template <>  const std::string typeName<std::vector<HalfFaceHandle> >();
+template <>  const std::string typeName<std::vector<std::vector<HalfFaceHandle> > >();
 
 template<typename Entity>
 const std::string entityTypeName();
 
-template <> OVM_EXPORT const std::string entityTypeName<Entity::Vertex>();
-template <> OVM_EXPORT const std::string entityTypeName<Entity::HalfEdge>();
-template <> OVM_EXPORT const std::string entityTypeName<Entity::Edge>();
-template <> OVM_EXPORT const std::string entityTypeName<Entity::Face>();
-template <> OVM_EXPORT const std::string entityTypeName<Entity::HalfFace>();
-template <> OVM_EXPORT const std::string entityTypeName<Entity::Cell>();
-template <> OVM_EXPORT const std::string entityTypeName<Entity::Mesh>();
+template <> const std::string entityTypeName<Entity::Vertex>();
+template <> const std::string entityTypeName<Entity::HalfEdge>();
+template <> const std::string entityTypeName<Entity::Edge>();
+template <> const std::string entityTypeName<Entity::Face>();
+template <> const std::string entityTypeName<Entity::HalfFace>();
+template <> const std::string entityTypeName<Entity::Cell>();
+template <> const std::string entityTypeName<Entity::Mesh>();
 
 template<typename T, typename Entity>
 class PropertyTT : public PropertyPtr<OpenVolumeMeshPropertyT<T>, Entity> {
 public:
-    using value_type = T;
-    using entity_type = Entity;
-    template<typename MeshT>
-    PropertyTT(MeshT *mesh, const std::string& _name, const T &_def = T())
-        : PropertyTT(std::move(mesh->template request_property<T, Entity>(_name, _def)))
-    {}
-    PropertyTT (const PropertyTT<T, Entity>&) = default;
-    PropertyTT (PropertyTT<T,Entity>&&) = default;
-    // copy assignment can be confusing for users - instead of the property contents
-    // being assigned, the PropertyPtr just points to the rhs now.
-    PropertyTT<T, Entity>& operator=(const PropertyTT<T, Entity>&) = delete;
-    PropertyTT<T, Entity>& operator=(PropertyTT<T, Entity>&&) = default;
-
     using PropertyHandleT = OpenVolumeMesh::PropHandleT<Entity>;
-    PropertyTT(const std::string& _name, const std::string& _internal_type_name, ResourceManager& _resMan, PropertyHandleT _handle, const T &_def = T());
-    ~PropertyTT() override = default;
-    BaseProperty* clone(ResourceManager &_resMan, OpenVolumeMeshHandle _handle) const override;
-    const std::string entityType() const override { return entityTypeName<Entity>(); }
-    const std::string typeNameWrapper() const override { return typeName<T>(); }
+    PropertyTT(const std::string& _name, ResourceManager& _resMan, PropertyHandleT _handle, const T _def = T());
+    virtual ~PropertyTT() = default;
+    virtual BaseProperty* clone(ResourceManager &_resMan, OpenVolumeMeshHandle _handle) const;
+    virtual const std::string entityType() const { return entityTypeName<Entity>(); }
+    virtual const std::string typeNameWrapper() const { return typeName<T>(); }
 private:
     PropertyTT(OpenVolumeMeshPropertyT<T> *_prop, ResourceManager& _resMan, PropertyHandleT _handle);
 };
