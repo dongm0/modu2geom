@@ -7,6 +7,8 @@
 #include <memory>
 #include <map>
 #include <set>
+
+#define IGL_STATIC_LIBRARY
 /*
 enum class ErrorCode {
     succeed,

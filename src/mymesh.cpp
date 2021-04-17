@@ -1,6 +1,5 @@
 #include "mymesh.h"
 #include "arapoperator.h"
-#include "msqoptimizer.h"
 #include "OVMVtkHexIO.h"
 
 namespace{
@@ -353,7 +352,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
         }
         //变形
         {
-            ArapOperator::Instance().Optimize(m_mesh, fixed);
+            ArapOperator::Instance().Deformation(m_mesh, fixed);
         }
         WriteGeomToVTKFile("tmp.vtk");
     }
@@ -469,7 +468,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
             fixed[getGeomV(fan3[2])] = new_pos[2][0] + new_pos[0][0] - getCoord_topo(fan1[0]);
         }
         {
-            ArapOperator::Instance().Optimize(m_mesh, fixed);
+            ArapOperator::Instance().Deformation(m_mesh, fixed);
         }
     }
 
@@ -581,7 +580,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
             fixed[getGeomV(wing2[3])] = new_pos[1][1];
         }
         {
-            ArapOperator::Instance().Optimize(m_mesh, fixed);
+            ArapOperator::Instance().Deformation(m_mesh, fixed);
         }
         std::vector<VertexHandle> tagged;
         for (auto x : fixed) {
@@ -711,7 +710,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
             fixed[getGeomV(side2[3])] = new_pos[0][1] + new_pos[1][0] - getCoord_topo(bottom1[0]);
         }
         {
-            ArapOperator::Instance().Optimize(m_mesh, fixed);
+            ArapOperator::Instance().Deformation(m_mesh, fixed);
         }
         WriteGeomToVTKFile("tmp.vtk");
     }
@@ -797,7 +796,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
             fixed[getGeomV(wings[2][3])] = new_pos[1][1];
         }
         {
-            ArapOperator::Instance().Optimize(m_mesh, fixed);
+            ArapOperator::Instance().Deformation(m_mesh, fixed);
         }
         std::vector<OpenVolumeMesh::VertexHandle> _tmp;
         for (auto &x : fixed) {
@@ -818,6 +817,6 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
 
 
 bool MyMesh::Optimize() {
-    MsqOperator::Instance().Optimize(m_mesh);
+    //ArapOperator::Instance().Optimize(m_mesh,{});
     return true;
 }
