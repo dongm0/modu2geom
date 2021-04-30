@@ -1,7 +1,7 @@
 #include "utils.h"
 #include "mymesh.h"
 
-std::string filepath("/home/dm/github/modu2geom/");
+std::string filepath("/home/dm/github/modu2geom/modudata/modu");
 
 std::string ifilename("con36-1.txt");
 std::string ofilename("");
@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
         }
         mesh.GenerateOneCell(mesh.GetCurrentCellHandle());
         mesh.Optimize();
-        mesh.WriteGeomToVTKFile(filepath+ofilename+"src/"+std::to_string(i)+".vtk");
+        mesh.WriteGeomToVTKFile(std::to_string(i)+".vtk");
     }
     mesh.WriteGeomToVTKFile(ofilename);
     return 0;

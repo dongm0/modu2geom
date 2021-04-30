@@ -354,7 +354,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
         {
             ArapOperator::Instance().Deformation(m_mesh, fixed);
         }
-        WriteGeomToVTKFile("tmp.vtk");
+        //WriteGeomToVTKFile("tmp.vtk");
     }
     //end
     VertexHandle p0 = getGeomV(wing1[0]), p1 = getGeomV(wing1[3]), p2 = getGeomV(wing2[2]);
@@ -490,7 +490,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
     auto _geomch = m_mesh.add_cell(cell_vertices);
     m_tm2m_mapping[_ch] = _geomch;
     m_m2tm_mapping[_geomch] = _ch;
-    WriteGeomToVTKFile("tmp.vtk");
+    //WriteGeomToVTKFile("tmp.vtk");
 
     return true;
 }
@@ -587,7 +587,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
             tagged.push_back(x.first);
         }
         
-        WriteGeomToVTKFile("tmp.vtk", tagged);
+        //WriteGeomToVTKFile("tmp.vtk", tagged);
     }
 
     //end
@@ -712,7 +712,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
         {
             ArapOperator::Instance().Deformation(m_mesh, fixed);
         }
-        WriteGeomToVTKFile("tmp.vtk");
+        //WriteGeomToVTKFile("tmp.vtk");
     }
     //end
     std::vector<VertexHandle> cell_vertices{getGeomV(bottom1[0]), getGeomV(bottom1[3]), getGeomV(bottom1[2]), 
@@ -802,7 +802,7 @@ const std::vector<OpenVolumeMesh::HalfFaceHandle> &_nbhf_vec) {
         for (auto &x : fixed) {
             _tmp.push_back(x.first);
         }
-        WriteGeomToVTKFile("tmp.vtk", _tmp);
+        //WriteGeomToVTKFile("tmp.vtk", _tmp);
     }
 
     //end

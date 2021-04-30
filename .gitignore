@@ -33,10 +33,3 @@
 
 # vscode project files
 .vscode/
-
-# bin
-src/modu2geom
-
-# vtk
-./src/*.vtk
-*.vtk

@@ -1,0 +1,17 @@
+# vtk DataFile Version 3.0
+generate by dongmo
+ASCII
+DATASET UNSTRUCTURED_GRID
+POINTS 8 double
+0 0 0
+1 0 0
+1 1 0
+0 1 0
+0 0 1
+1 0 1
+1 1 1
+0 1 1
+CELLS 1 9
+8 1 0 3 2 5 4 7 6
+CELL_TYPES 1
+12

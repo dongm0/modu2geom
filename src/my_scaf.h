@@ -1,3 +1,4 @@
+#include "utils.h"
 #include <igl/MappingEnergyType.h>
 #include <igl/igl_inline.h>
 #include <igl/slim.h>
