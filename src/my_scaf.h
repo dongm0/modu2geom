@@ -1,7 +1,13 @@
+#pragma once
+
+//#include "OVMVtkHexIO.h"
+//#include "ovmwrap.h"
 #include "utils.h"
+#include <Eigen/Dense>
+#include <Eigen/Sparse>
 #include <igl/MappingEnergyType.h>
 #include <igl/igl_inline.h>
-#include <igl/slim.h>
+//#include <igl/slim.h>
 
 namespace igl {
 namespace my_scaf {
@@ -49,7 +55,7 @@ struct SCAFData {
 
   // pre_calc data
   Eigen::MatrixXd m_GradRef;
-  
+
   //
   Eigen::MatrixXd s_Grad;
 
@@ -64,12 +70,12 @@ struct SCAFData {
 //    b           list of boundary indices into V (soft constraint)
 //    bc          #b by dim list of boundary conditions (soft constraint)
 //    soft_p      Soft penalty factor (can be zero)
-IGL_INLINE void scaf_precompute(const Eigen::MatrixXd &V,
-                                const Eigen::MatrixXi &F,
-                                const Eigen::MatrixXd &V_init, SCAFData &data,
-                                MappingEnergyType slim_energy,
-                                Eigen::VectorXi &b, Eigen::MatrixXd &bc,
-                                double soft_p);
+IGL_INLINE void
+scaf_precompute(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F,
+                const Eigen::MatrixXd &V_init, const Eigen::MatrixXi &surface,
+                igl::my_scaf::SCAFData &data,
+                igl::MappingEnergyType slim_energy, Eigen::VectorXi &b,
+                Eigen::MatrixXd &bc, double soft_p);
 
 // Run iter_num iterations of SCAF, with precomputed data
 // Outputs:
@@ -93,5 +99,8 @@ IGL_INLINE void scaf_system(SCAFData &s, Eigen::SparseMatrix<double> &L,
 //    whole: Include scaffold if true
 IGL_INLINE double compute_energy(SCAFData &s, const Eigen::MatrixXd &w_V,
                                  bool whole);
+
 } // namespace my_scaf
 } // namespace igl
+
+#include "my_scaf.cpp"

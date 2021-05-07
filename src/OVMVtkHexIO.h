@@ -1,5 +1,6 @@
 #include <OpenVolumeMesh/Mesh/HexahedralMesh.hh>
 
+#include <Eigen/Eigen>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -22,7 +23,7 @@ void OVMReadHexVtkStream(HexMesh &mesh, std::istream &stream,
   uint32_t vnum = 0, cnum = 0;
 
   mesh.clear(false);
-  mesh.enable_bottom_up_incidences(false);
+  mesh.enable_bottom_up_incidences(_computeBottomUpIncidences);
 
   std::getline(stream, line);
   std::getline(stream, line);
