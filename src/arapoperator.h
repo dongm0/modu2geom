@@ -11,14 +11,12 @@ public:
     static ArapOperator m_instance;
     return m_instance;
   }
-  void Optimize(
-      OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm,
-      std::map<OpenVolumeMesh::VertexHandle, OpenVolumeMesh::Geometry::Vec3d>
-          fixed);
-  void Deformation(
-      OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm,
-      std::map<OpenVolumeMesh::VertexHandle, OpenVolumeMesh::Geometry::Vec3d>
-          fixed);
+  void Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm,
+                std::map<OpenVolumeMesh::VertexHandle,
+                         OpenVolumeMesh::Geometry::Vec3d> &fixed);
+  void Deformation(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm,
+                   std::map<OpenVolumeMesh::VertexHandle,
+                            OpenVolumeMesh::Geometry::Vec3d> &fixed);
 
 private:
   ArapOperator() {}

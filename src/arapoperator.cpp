@@ -6,13 +6,13 @@
 void ArapOperator::Deformation(
     OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm,
     std::map<OpenVolumeMesh::VertexHandle, OpenVolumeMesh::Geometry::Vec3d>
-        fixed) {
+        &fixed) {
   using namespace Eigen;
   using namespace OpenVolumeMesh;
   MatrixXd V, bc;
   MatrixXi T, surface;
   VectorXi b;
-  transform_hex_to_matrix(V, T, b, bc, _ovm, fixed);
+  transform_hex_to_matrix(V, T, b, bc, surface, _ovm, fixed);
   MatrixXd V0 = V;
   // slim
   igl::my_scaf::SCAFData sData;
@@ -24,10 +24,9 @@ void ArapOperator::Deformation(
   transform_matrix_to_hex(V0, _ovm);
 }
 
-void ArapOperator::Optimize(
-    OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm,
-    std::map<OpenVolumeMesh::VertexHandle, OpenVolumeMesh::Geometry::Vec3d>
-        fixed) {
+void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm,
+                            std::map<OpenVolumeMesh::VertexHandle,
+                                     OpenVolumeMesh::Geometry::Vec3d> &fixed) {
   using namespace Eigen;
   using namespace OpenVolumeMesh;
   MatrixXd V, bc;
