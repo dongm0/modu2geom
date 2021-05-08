@@ -60,6 +60,8 @@ struct SCAFData {
   Eigen::MatrixXd s_Grad;
 
   bool has_pre_calc = false;
+
+  bool m_use_standard = true;
 };
 // Compute necessary information to start using SCAF
 // Inputs:

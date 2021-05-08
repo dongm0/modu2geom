@@ -527,8 +527,13 @@ scaf_precompute(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F,
 
   if (!data.has_pre_calc) {
     //
-    igl::my_scaf::compute_my_mesh_grad_inv_matrix_standard(s.m_Vref, s.m_T,
-                                                           s.m_GradRef);
+    if (s.m_use_standard) {
+      igl::my_scaf::compute_my_mesh_grad_inv_matrix_standard(s.m_Vref, s.m_T,
+                                                             s.m_GradRef);
+    } else {
+      igl::my_scaf::compute_my_mesh_grad_inv_matrix(s.m_Vref, s.m_T,
+                                                    s.m_GradRef);
+    }
     data.has_pre_calc = true;
   }
 }

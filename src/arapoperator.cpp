@@ -10,17 +10,18 @@ void ArapOperator::Deformation(
   using namespace Eigen;
   using namespace OpenVolumeMesh;
   MatrixXd V, bc;
-  MatrixXi T;
+  MatrixXi T, surface;
   VectorXi b;
   transform_hex_to_matrix(V, T, b, bc, _ovm, fixed);
   MatrixXd V0 = V;
   // slim
-  igl::SLIMData sData;
-  igl::slim_precompute(V, T, V0, sData,
-                       igl::MappingEnergyType::SYMMETRIC_DIRICHLET, b, bc, 1e6);
-  igl::slim_solve(sData, 5);
+  igl::my_scaf::SCAFData sData;
+  igl::my_scaf::scaf_precompute(V, T, V0, surface, sData,
+                                igl::MappingEnergyType::SYMMETRIC_DIRICHLET, b,
+                                bc, 1e6);
+  V0 = igl::my_scaf::scaf_solve(sData, 3);
   // slim完了
-  transform_matrix_to_hex(sData.V_o, _ovm);
+  transform_matrix_to_hex(V0, _ovm);
 }
 
 void ArapOperator::Optimize(
@@ -35,6 +36,7 @@ void ArapOperator::Optimize(
   transform_hex_to_matrix(V, T, b, bc, surface, _ovm, fixed);
   MatrixXd V_o = V;
   igl::my_scaf::SCAFData data;
+  data.m_use_standard = true;
   igl::my_scaf::scaf_precompute(V, T, V_o, surface, data,
                                 igl::MappingEnergyType::SYMMETRIC_DIRICHLET, b,
                                 bc, 1e6);
