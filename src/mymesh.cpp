@@ -404,10 +404,11 @@ bool MyMesh::AddOneCellCase2(
       fixed[getGeomV(wing1[3])] = new_pos[0][1];
       fixed[getGeomV(wing2[2])] = new_pos[1][0];
       fixed[getGeomV(wing2[3])] = new_pos[1][1];
+      // std::cout << fixed.size() << std::endl;
     }
     //变形
     { ArapOperator::Instance().Deformation(m_mesh, fixed); }
-    // WriteGeomToVTKFile("tmp.vtk");
+    WriteGeomToVTKFile("tmp.vtk");
   }
   // end
   VertexHandle p0 = getGeomV(wing1[0]), p1 = getGeomV(wing1[3]),
@@ -987,8 +988,8 @@ bool MyMesh::Optimize() {
   auto _p0 = m_mesh.vertex(_h0);
   auto _p1 = m_mesh.vertex(_h1);
   std::map<OpenVolumeMesh::VertexHandle, OpenVolumeMesh::Geometry::Vec3d> fixed;
-  fixed.insert({_h0, _p0});
-  fixed.insert({_h1, _p1});
+  // fixed.insert({_h0, _p0});
+  // fixed.insert({_h1, _p1});
   ArapOperator::Instance().Optimize(m_mesh, fixed);
   return true;
 }

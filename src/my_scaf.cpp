@@ -78,7 +78,8 @@ static IGL_INLINE void compute_my_mesh_grad_inv_matrix_standard(
     dp1 = V.row(T(i, 1)) - V.row(T(i, 0));
     dp2 = V.row(T(i, 2)) - V.row(T(i, 0));
     dp3 = V.row(T(i, 3)) - V.row(T(i, 0));
-    auto _len = pow(fabs(dp1.cross(dp2).dot(dp3)), 1.0 / 3);
+    auto _len = (dp1.norm() + dp2.norm() + dp3.norm()) /
+                3; // pow(fabs(dp1.cross(dp2).dot(dp3)), 1.0 / 3);
     Matrix3d P = (1.0 / _len) * MatrixXd::Identity(3, 3);
 
     G.block(i * 3, 0, 3, 3) = P; // P.block(0, 0, 3, 3);
@@ -309,10 +310,11 @@ static IGL_INLINE void add_new_patch(igl::my_scaf::SCAFData &s,
   mesh_improve(s);
 }
 
-static IGL_INLINE double compute_soft_constraint_energy(const SCAFData &s) {
+static IGL_INLINE double
+compute_soft_constraint_energy(const SCAFData &s, const Eigen::MatrixXd &newV) {
   double e = 0;
   for (auto const &x : s.soft_cons)
-    e += s.soft_const_p * (x.second - s.w_V.row(x.first)).squaredNorm();
+    e += s.soft_const_p * (x.second - newV.row(x.first)).squaredNorm();
 
   return e;
 }
@@ -366,7 +368,7 @@ IGL_INLINE double compute_energy(SCAFData &s, const Eigen::MatrixXd &w_V,
                             pow(s2, -2) + pow(s3, 2) + pow(s3, -2));
     }
   }
-  energy += compute_soft_constraint_energy(s);
+  energy += compute_soft_constraint_energy(s, w_V);
   return energy;
 }
 
@@ -427,8 +429,6 @@ static IGL_INLINE double perform_iteration(SCAFData &s) {
   b.resize(s.w_V.rows() * 3);
   b.setZero();
   uint32_t _disp = s.w_V.rows();
-  // printEigenMatrix(s.m_V, std::cout);
-  // printEigenMatrix(s.m_T, std::cout);
 
   Matrix3d Q;
   Vector3d dp1, dp2, dp3;
@@ -445,9 +445,6 @@ static IGL_INLINE double perform_iteration(SCAFData &s) {
       }
       b(s.m_T(i, i0 % 4) + (i0 / 4) * _disp) += tmpb(i0) * s.m_M(i);
     }
-    // printEigenMatrix(tmpA, std::cout);
-    // printEigenVector(tmpb, std::cout);
-    // std::cout << s.m_M(i) << "\n" << std::endl;
   }
 
   for (uint32_t i = 0; i < s.sf_num; ++i) {
@@ -477,9 +474,18 @@ static IGL_INLINE double perform_iteration(SCAFData &s) {
       }
       b(s.s_T(i, i0 % 4) + (i0 / 4) * _disp) += tmpb(i0) * s.s_M(i);
     }
-    // printEigenMatrix(tmpA, std::cout);
-    // printEigenVector(tmpb, std::cout);
-    // std::cout << s.s_M(i) << "\n" << std::endl;
+  }
+
+  for (auto x : s.soft_cons) {
+    int _vn = x.first;
+    int _disp = s.w_V.rows();
+    Vector3d _vcoord = x.second;
+    A(_vn, _vn) += s.soft_const_p;
+    b(_vn) += s.soft_const_p * _vcoord(0);
+    A(_vn + _disp, _vn + _disp) += s.soft_const_p;
+    b(_vn + _disp) += s.soft_const_p * _vcoord(1);
+    A(_vn + _disp * 2, _vn + _disp * 2) += s.soft_const_p;
+    b(_vn + _disp * 2) += s.soft_const_p * _vcoord(2);
   }
 
   SimplicialLDLT<SparseMatrix<double>> solver;
@@ -523,16 +529,16 @@ scaf_precompute(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F,
     data.soft_cons[b(i)] = bc.row(i);
   data.slim_energy = slim_energy;
 
-  auto &s = data;
+  // auto &s = data;
 
   if (!data.has_pre_calc) {
     //
-    if (s.m_use_standard) {
-      igl::my_scaf::compute_my_mesh_grad_inv_matrix_standard(s.m_Vref, s.m_T,
-                                                             s.m_GradRef);
+    if (data.m_use_standard) {
+      igl::my_scaf::compute_my_mesh_grad_inv_matrix_standard(
+          data.m_Vref, data.m_T, data.m_GradRef);
     } else {
-      igl::my_scaf::compute_my_mesh_grad_inv_matrix(s.m_Vref, s.m_T,
-                                                    s.m_GradRef);
+      igl::my_scaf::compute_my_mesh_grad_inv_matrix(data.m_Vref, data.m_T,
+                                                    data.m_GradRef);
     }
     data.has_pre_calc = true;
   }
@@ -550,7 +556,7 @@ IGL_INLINE Eigen::MatrixXd scaf_solve(igl::my_scaf::SCAFData &s, int iter_num) {
     igl::my_scaf::mesh_improve(s);
 
     double new_weight = s.mesh_measure * s.energy / (s.sf_num * 100);
-    s.scaffold_factor = new_weight;
+    s.scaffold_factor = new_weight * 1e-4;
     igl::my_scaf::update_scaffold(s);
 
     s.total_energy = igl::my_scaf::perform_iteration(s);

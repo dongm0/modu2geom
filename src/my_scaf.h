@@ -36,8 +36,6 @@ struct SCAFData {
   Eigen::MatrixXd m_V;
   Eigen::MatrixXi m_T;
   Eigen::MatrixXd m_Vref;
-  Eigen::VectorXi b;
-  Eigen::MatrixXd bc;
   Eigen::VectorXd m_M;
   Eigen::MatrixXi m_surface;
 
