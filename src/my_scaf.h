@@ -1,106 +1,122 @@
-#pragma once
+// This file is part of libigl, a simple c++ geometry processing library.
+//
+// Copyright (C) 2016 Michael Rabinovich
+//
+// This Source Code Form is subject to the terms of the Mozilla Public License
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can
+// obtain one at http://mozilla.org/MPL/2.0/.
+#ifndef MY_SCAF_H
+#define MY_SCAF_H
 
-//#include "OVMVtkHexIO.h"
-//#include "ovmwrap.h"
-#include "utils.h"
+#include <igl/igl_inline.h>
+#include <igl/MappingEnergyType.h>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
-#include <igl/MappingEnergyType.h>
-#include <igl/igl_inline.h>
-//#include <igl/slim.h>
+
+// This option makes the iterations faster (all except the first) by caching the 
+// sparsity pattern of the matrix involved in the assembly. It should be on if you plan to do many iterations, off if you have to change the matrix structure at every iteration.
+#define SLIM_CACHED 
+
+#ifdef SLIM_CACHED
+#include <igl/AtA_cached.h>
+#endif
 
 namespace igl {
-namespace my_scaf {
-struct SCAFData {
-  // parameters
-  double scaffold_factor = 10;
-  igl::MappingEnergyType scaf_energy =
-      igl::MappingEnergyType::SYMMETRIC_DIRICHLET;
-  igl::MappingEnergyType slim_energy =
-      igl::MappingEnergyType::SYMMETRIC_DIRICHLET;
+namespace my_scaf { // Compute a SLIM map as derived in "Scalable Locally
+                    // Injective Maps" [Rabinovich et al. 2016].
+struct SLIMData {
+  // Input
+  Eigen::MatrixXd V; // #V by 3 list of mesh vertex positions
+  Eigen::MatrixXi F; // #F by 3/3 list of mesh faces (triangles/tets)
+  MappingEnergyType slim_energy;
 
-  int dim = 3;         // 3D only
-  double total_energy; // scaffold + isometric
+  // Optional Input
+  // soft constraints
+  Eigen::VectorXi b;
+  Eigen::MatrixXd bc;
+  double soft_const_p;
+
+  double exp_factor;        // used for exponential energies, ignored otherwise
+  bool mesh_improvement_3d; // only supported for 3d
+
+  // Output
+  Eigen::MatrixXd V_o; // #V by dim list of mesh vertex positions (dim = 2 for
+                       // parametrization, 3 otherwise)
   double energy;       // objective value
 
-  long mv_num = 0, mf_num = 0;
-  long sv_num = 0, sf_num = 0;
+  // INTERNAL
+  Eigen::VectorXd M;
+  double mesh_area;
+  double avg_edge_length;
+  int v_num;
+  int f_num;
+  double proximal_p;
 
-  double mesh_measure; // area or volume
-  double proximal_p = 0;
+  Eigen::VectorXd WGL_M;
+  Eigen::VectorXd rhs;
+  Eigen::MatrixXd Ri, Ji;
+  Eigen::MatrixXd W;
+  Eigen::SparseMatrix<double> Dx, Dy, Dz;
+  int f_n, v_n;
+  bool first_solve;
+  bool has_pre_calc = false;
+  int dim;
 
-  std::map<int, Eigen::RowVectorXd> soft_cons;
-  double soft_const_p = 1e4;
+#ifdef SLIM_CACHED
+  Eigen::SparseMatrix<double> A;
+  Eigen::VectorXi A_data;
+  Eigen::SparseMatrix<double> AtA;
+  igl::AtA_cached_data AtA_data;
+#endif
 
-  // inner mesh
-  Eigen::MatrixXd m_V;
-  Eigen::MatrixXi m_T;
-  Eigen::MatrixXd m_Vref;
-  Eigen::VectorXd m_M;
+  // my_scaf
+  Eigen::MatrixXd w_V;
+  Eigen::MatrixXi w_T;
   Eigen::MatrixXi m_surface;
 
   uint32_t m_surface_fn, m_surface_vn;
   std::vector<uint32_t> mapping_tetgen2scaf;
   std::unordered_map<uint32_t, uint32_t> mapping_scaf2tetgen;
-  std::vector<uint32_t> mapping_t2s;
-  std::unordered_map<uint32_t, uint32_t> mapping_s2t;
-
-  // scaffold
-  Eigen::MatrixXi s_T;
-  Eigen::VectorXd s_M;
-
-  Eigen::MatrixXd w_V;
-
-  // pre_calc data
-  Eigen::MatrixXd m_GradRef;
-
-  //
-  Eigen::MatrixXd s_Grad;
-
-  bool has_pre_calc = false;
-
-  bool m_use_standard = true;
 };
-// Compute necessary information to start using SCAF
+
+// Compute necessary information to start using SLIM
 // Inputs:
 //		V           #V by 3 list of mesh vertex positions
 //		F           #F by 3/3 list of mesh faces (triangles/tets)
-//    data          igl::SCAFData
-//    slim_energy Energy type to minimize
-//    b           list of boundary indices into V (soft constraint)
-//    bc          #b by dim list of boundary conditions (soft constraint)
+//    b           list of boundary indices into V
+//    bc          #b by dim list of boundary conditions
 //    soft_p      Soft penalty factor (can be zero)
-IGL_INLINE void
-scaf_precompute(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F,
-                const Eigen::MatrixXd &V_init, const Eigen::MatrixXi &surface,
-                igl::my_scaf::SCAFData &data,
-                igl::MappingEnergyType slim_energy, Eigen::VectorXi &b,
-                Eigen::MatrixXd &bc, double soft_p);
+//    slim_energy Energy to minimize
+IGL_INLINE void slim_precompute(const Eigen::MatrixXd &V,
+                                const Eigen::MatrixXi &F,
+                                const Eigen::MatrixXd &V_init,
+                                const Eigen::MatrixXi &surface, SLIMData &data,
+                                MappingEnergyType slim_energy,
+                                const Eigen::VectorXi &b,
+                                const Eigen::MatrixXd &bc, double soft_p);
 
-// Run iter_num iterations of SCAF, with precomputed data
+// Run iter_num iterations of SLIM
 // Outputs:
 //    V_o (in SLIMData): #V by dim list of mesh vertex positions
-IGL_INLINE Eigen::MatrixXd scaf_solve(SCAFData &data, int iter_num);
+IGL_INLINE Eigen::MatrixXd slim_solve(SLIMData &data, int iter_num);
 
-// Set up the SCAF system L * uv = rhs, without solving it.
-// Inputs:
-//    s:   igl::SCAFData. Will be modified by energy and Jacobian computation.
-// Outputs:
-//    L:   m by m matrix
-//    rhs: m by 1 vector
-//         with m = dim * (#V_mesh + #V_scaf - #V_frame)
-IGL_INLINE void scaf_system(SCAFData &s, Eigen::SparseMatrix<double> &L,
-                            Eigen::VectorXd &rhs);
+// Internal Routine. Exposed for Integration with SCAF
+IGL_INLINE void slim_update_weights_and_closest_rotations_with_jacobians(
+    const Eigen::MatrixXd &Ji, igl::MappingEnergyType slim_energy,
+    double exp_factor, Eigen::MatrixXd &W, Eigen::MatrixXd &Ri);
 
-// Compute SCAF energy
-// Inputs:
-//    s:     igl::SCAFData
-//    w_uv:  (#V_mesh + #V_scaf) by dim matrix
-//    whole: Include scaffold if true
-IGL_INLINE double compute_energy(SCAFData &s, const Eigen::MatrixXd &w_V,
-                                 bool whole);
-
+IGL_INLINE void slim_buildA(const Eigen::SparseMatrix<double> &Dx,
+                            const Eigen::SparseMatrix<double> &Dy,
+                            const Eigen::SparseMatrix<double> &Dz,
+                            const Eigen::MatrixXd &W,
+                            std::vector<Eigen::Triplet<double>> &IJV);
 } // namespace my_scaf
-} // namespace igl
+}
 
+
+
+//#ifndef IGL_STATIC_LIBRARY
 #include "my_scaf.cpp"
+//#endif
+
+#endif // SLIM_H
