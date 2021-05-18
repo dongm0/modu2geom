@@ -39,12 +39,11 @@ void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm,
   MatrixXi T, surface;
   VectorXi b;
   transform_hex_to_matrix(V, T, b, bc, surface, _ovm, fixed);
-  MatrixXd V_o = V;
-  igl::my_scaf::SCAFData data;
-  data.m_use_standard = true;
-  igl::my_scaf::scaf_precompute(V, T, V_o, surface, data,
+  igl::my_scaf::SLIMData data;
+  MatrixXd refV;
+  igl::my_scaf::slim_precompute(refV, T, V, surface, data,
                                 igl::MappingEnergyType::SYMMETRIC_DIRICHLET, b,
                                 bc, 1e6);
-  V_o = igl::my_scaf::scaf_solve(data, 5);
-  transform_matrix_to_hex(V_o, _ovm);
+  igl::my_scaf::slim_solve(data, 5);
+  transform_matrix_to_hex(data.V_o, _ovm);
 }
