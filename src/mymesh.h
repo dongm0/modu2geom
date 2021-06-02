@@ -1,5 +1,5 @@
-
-#pragma once
+#ifndef MYMESH_H
+#define MYMESH_H
 
 #include <OpenVolumeMesh/FileManager/FileManager.hh>
 #include <OpenVolumeMesh/Geometry/VectorT.hh>
@@ -130,3 +130,4 @@ private:
   std::vector<OpenVolumeMesh::CellHandle> m_generate_order;
   int m_cur_idx = 0;
 };
+#endif

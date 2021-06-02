@@ -1,3 +1,5 @@
+#ifndef OVMVTKHEXIO_H
+#define OVMVTKHEXIO_H
 #include <OpenVolumeMesh/Mesh/HexahedralMesh.hh>
 
 #include <Eigen/Eigen>
@@ -110,3 +112,4 @@ void OVMWriteHexMesh(HexMesh &mesh, std::ofstream &stream,
     stream << x << std::endl;
   }
 }
+#endif

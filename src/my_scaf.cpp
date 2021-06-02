@@ -5,6 +5,9 @@
 // This Source Code Form is subject to the terms of the Mozilla Public License
 // v. 2.0. If a copy of the MPL was not distributed with this file, You can
 // obtain one at http://mozilla.org/MPL/2.0/.
+#ifndef MY_SCAF_IMPL
+#define MY_SCAF_IMPL
+
 #include "my_scaf.h"
 #include "tetgen.h"
 #include "utils.h"
@@ -46,6 +49,16 @@
 namespace igl {
 namespace my_scaf {
 // static
+IGL_INLINE void build_linear_system(SLIMData &s,
+                                    Eigen::SparseMatrix<double> &L);
+IGL_INLINE void buildRhs(SLIMData &s, const Eigen::SparseMatrix<double> &A);
+IGL_INLINE void add_soft_constraints(SLIMData &s,
+                                     Eigen::SparseMatrix<double> &L);
+IGL_INLINE double compute_soft_const_energy(SLIMData &s,
+                                            const Eigen::MatrixXd &V,
+                                            const Eigen::MatrixXi &F,
+                                            const Eigen::MatrixXd &V_o);
+
 IGL_INLINE void compute_jacobians(igl::my_scaf::SLIMData &s,
                                   const Eigen::MatrixXd &uv) {
   if (s.F.cols() == 3) {
@@ -71,7 +84,7 @@ IGL_INLINE void compute_jacobians(igl::my_scaf::SLIMData &s,
 IGL_INLINE void update_weights_and_closest_rotations(SLIMData &s,
                                                      Eigen::MatrixXd &uv) {
   compute_jacobians(s, uv);
-  slim_update_weights_and_closest_rotations_with_jacobians(
+  igl::my_scaf::slim_update_weights_and_closest_rotations_with_jacobians(
       s.Ji, s.slim_energy, s.exp_factor, s.W, s.Ri);
 }
 
@@ -999,6 +1012,4 @@ IGL_INLINE Eigen::MatrixXd slim_solve(SLIMData &data, int iter_num) {
 } // namespace my_scaf
 } // namespace igl
 
-#ifdef IGL_STATIC_LIBRARY
-// Explicit template instantiation
 #endif
