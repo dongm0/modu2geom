@@ -1,6 +1,5 @@
 #ifndef OVMWRAP_H
 #define OVMWRAP_H
-#endif
 
 #include "utils.h"
 #include <Eigen/Dense>
@@ -32,3 +31,6 @@ void transform_matrix_to_hex(const Eigen::MatrixXd &V,
 void write_matrix_to_vtk_tet(const Eigen::MatrixXd &V, const Eigen::MatrixXi &T,
                              std::ostream &stream);
 
+#include "ovmwrap.cpp"
+
+#endif

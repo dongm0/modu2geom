@@ -1,4 +1,5 @@
-#pragma once
+#ifndef ARAPOPERATOR_H
+#define ARAPOPERATOR_H
 
 #include "my_scaf.h"
 #include "utils.h"
@@ -23,3 +24,4 @@ private:
   ArapOperator(const ArapOperator &_rhs) = delete;
   ArapOperator operator=(const ArapOperator *_rhs) = delete;
 };
+#endif

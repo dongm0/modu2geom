@@ -1,3 +1,6 @@
+#ifndef OVMWRAP_IMPL
+#define OVMWRAP_IMPL
+
 #include "ovmwrap.h"
 
 namespace {
@@ -14,7 +17,7 @@ bool check_vector_increase(Eigen::VectorXi &v) {
 }
 }; // namespace
 
-std::vector<OpenVolumeMesh::VertexHandle> opposite_vertex_in_cell(
+inline std::vector<OpenVolumeMesh::VertexHandle> opposite_vertex_in_cell(
     const OpenVolumeMesh::HexahedralMeshTopologyKernel &mesh,
     const OpenVolumeMesh::CellHandle &cell,
     const OpenVolumeMesh::HalfFaceHandle &hf,
@@ -34,7 +37,7 @@ std::vector<OpenVolumeMesh::VertexHandle> opposite_vertex_in_cell(
   return res;
 }
 
-void transform_hex_to_matrix(
+inline void transform_hex_to_matrix(
     Eigen::MatrixXd &V, Eigen::MatrixXi &T, Eigen::VectorXi &b,
     Eigen::MatrixXd &bc, const OpenVolumeMesh::GeometricHexahedralMeshV3d &mesh,
     std::map<OpenVolumeMesh::VertexHandle, OpenVolumeMesh::Geometry::Vec3d>
@@ -85,7 +88,7 @@ void transform_hex_to_matrix(
   }
 }
 
-void transform_hex_to_matrix(
+inline void transform_hex_to_matrix(
     Eigen::MatrixXd &V, Eigen::MatrixXi &T, Eigen::VectorXi &b,
     Eigen::MatrixXd &bc, Eigen::MatrixXi &surface,
     const OpenVolumeMesh::GeometricHexahedralMeshV3d &mesh,
@@ -156,8 +159,9 @@ void transform_hex_to_matrix(
   }
 }
 
-void transform_matrix_to_hex(const Eigen::MatrixXd &V,
-                             OpenVolumeMesh::GeometricHexahedralMeshV3d &mesh) {
+inline void
+transform_matrix_to_hex(const Eigen::MatrixXd &V,
+                        OpenVolumeMesh::GeometricHexahedralMeshV3d &mesh) {
   int _vnum = V.rows();
   for (int i = 0; i < _vnum; ++i) {
     mesh.set_vertex(OpenVolumeMesh::VertexHandle(i),
@@ -165,8 +169,9 @@ void transform_matrix_to_hex(const Eigen::MatrixXd &V,
   }
 }
 
-void write_matrix_to_vtk_tet(const Eigen::MatrixXd &V, const Eigen::MatrixXi &T,
-                             std::ostream &stream) {
+inline void write_matrix_to_vtk_tet(const Eigen::MatrixXd &V,
+                                    const Eigen::MatrixXi &T,
+                                    std::ostream &stream) {
   stream << "# vtk DataFile Version 3.0\ngenerate by dongmo\nASCII\nDATASET "
             "UNSTRUCTURED_GRID"
          << std::endl;
@@ -185,3 +190,4 @@ void write_matrix_to_vtk_tet(const Eigen::MatrixXd &V, const Eigen::MatrixXi &T,
   }
   return;
 }
+#endif

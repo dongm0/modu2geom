@@ -1,3 +1,5 @@
+#ifndef PRINTEIGEN_H
+#define PRINTEIGEN_H
 #include <Eigen/Eigen>
 #include <iostream>
 
@@ -20,3 +22,4 @@ void printEigenVector(const Vec &v, std::ostream &stream) {
   stream << std::endl;
   stream << std::endl;
 }
+#endif
