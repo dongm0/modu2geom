@@ -17,7 +17,8 @@ int main(int argc, char **argv) {
 #ifdef NDEBUG
   mesh.ReadTopoFromFile(std::string(argv[1]));
 #else
-  mesh.ReadTopoFromFile(filepath + ifilename);
+  mesh.ReadTopoFromFile(std::string(argv[1]));
+  // mesh.ReadTopoFromFile(filepath + ifilename);
 #endif
   mesh.GenerateOrder();
   mesh.checkTopo();

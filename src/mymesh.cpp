@@ -1,5 +1,6 @@
 #include "mymesh.h"
 #include "OVMVtkHexIO.h"
+#include "msqoptimizer.h"
 #include "ovmwrap.h"
 
 namespace {
@@ -366,12 +367,23 @@ bool MyMesh::AddOneCellCase2(
       VertexHandle wbv4 = opposite_vertex_in_cell(
           m_topomesh, _nbc_vec[1],
           m_topomesh.opposite_halfface_handle(_nbhf_vec[1]), {wing2[1]})[0];
-      normdir = (getCoord_topo(wing1[0]) - getCoord_topo(wbv1) +
-                 getCoord_topo(wing1[1]) - getCoord_topo(wbv2))
-                    .normalize_cond() +
-                (getCoord_topo(wing2[0]) - getCoord_topo(wbv3) +
-                 getCoord_topo(wing2[1]) - getCoord_topo(wbv4))
-                    .normalize_cond();
+      auto normdir1 = (getCoord_topo(wing1[0]) - getCoord_topo(wbv1) +
+                       getCoord_topo(wing1[1]) - getCoord_topo(wbv2))
+                          .normalize_cond() +
+                      (getCoord_topo(wing2[0]) - getCoord_topo(wbv3) +
+                       getCoord_topo(wing2[1]) - getCoord_topo(wbv4))
+                          .normalize_cond();
+      auto normdir2 = (getCoord_topo(wing1[3]) - getCoord_topo(wing1[0]) +
+                       getCoord_topo(wing1[2]) - getCoord_topo(wing1[1]))
+                          .normalize_cond() +
+                      (getCoord_topo(wing2[3]) - getCoord_topo(wing2[0]) +
+                       getCoord_topo(wing2[2]) - getCoord_topo(wing2[1]))
+                          .normalize_cond();
+      if (normdir1.length() > normdir2.length()) {
+        normdir = normdir1;
+      } else {
+        normdir = normdir2;
+      }
       bottoml = getCoord_topo(wing1[0]) - getCoord_topo(wing1[1]);
       // project
       normdir = normdir - ((bottoml | normdir) / bottoml.length()) *
@@ -983,6 +995,7 @@ bool MyMesh::AddOneCellCase6(
 }
 
 bool MyMesh::Optimize() {
+  /*
   auto _h0 = OpenVolumeMesh::VertexHandle(0);
   auto _h1 = OpenVolumeMesh::VertexHandle(1);
   auto _p0 = m_mesh.vertex(_h0);
@@ -991,5 +1004,7 @@ bool MyMesh::Optimize() {
   // fixed.insert({_h0, _p0});
   // fixed.insert({_h1, _p1});
   ArapOperator::Instance().Optimize(m_mesh, fixed);
+  */
+  MsqOperator::Instance().Optimize_old(m_mesh);
   return true;
 }
