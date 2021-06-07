@@ -87,9 +87,9 @@ void OVMWriteHexMesh(HexMesh &mesh, std::ofstream &stream) {
     for (auto v : mesh.hex_vertices(c)) {
       _vtmp.push_back(v);
     }
-    stream << _vtmp[0].idx() << " " << _vtmp[1].idx() << " " << _vtmp[2].idx()
-           << " " << _vtmp[3].idx() << " " << _vtmp[4].idx() << " "
-           << _vtmp[7].idx() << " " << _vtmp[6].idx() << " " << _vtmp[5].idx();
+    stream << _vtmp[1].idx() << " " << _vtmp[0].idx() << " " << _vtmp[3].idx()
+           << " " << _vtmp[2].idx() << " " << _vtmp[7].idx() << " "
+           << _vtmp[4].idx() << " " << _vtmp[5].idx() << " " << _vtmp[6].idx();
     stream << std::endl;
   }
   stream << "CELL_TYPES " << mesh.n_cells() << std::endl;

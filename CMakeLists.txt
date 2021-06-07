@@ -9,6 +9,8 @@ set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeR
 
 set(IGL_INCLUDE_DIR "/home/dm/github/libigl/include/" CACHE PATH igl)
 set(EIGEN_INCLUDE_DIR "/usr/include/eigen3/" CACHE PATH eigen)
+set(MESQUITE_INCLUDE_DIR "/home/dm/workspace/trilinos-12.12.1-Source/build/install/include/" CACHE PATH eigen)
+set(MESQUITE_LIB_DIR "/home/dm/workspace/trilinos-12.12.1-Source/build/install/lib/" CACHE PATH eigen)
 set(OVM_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/third-party/include/" CACHE PATH ovm)
 set(OVM_LIB_DIR "${CMAKE_SOURCE_DIR}/third-party/lib/" CACHE PATH ovm)
 set(TETGEN_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/third-party/include/" CACHE PATH tet)
