@@ -4,7 +4,7 @@
 std::string filepath("/home/dm/github/modu2geom/modudata/modu/");
 
 std::string ifilename("con36-1.txt");
-std::string ofilename("");
+std::string ofilename("res.vtk");
 
 int main(int argc, char **argv) {
 #ifdef NDEBUG
@@ -28,7 +28,8 @@ int main(int argc, char **argv) {
     }
     mesh.GenerateOneCell(mesh.GetCurrentCellHandle());
     mesh.Optimize();
-    mesh.WriteGeomToVTKFile(std::to_string(i) + ".vtk");
+    // mesh.WriteGeomToVTKFile(std::to_string(i) + ".vtk");
+    std::cout << i << std::endl;
   }
   mesh.WriteGeomToVTKFile(ofilename);
   return 0;

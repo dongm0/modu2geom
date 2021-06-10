@@ -32,36 +32,38 @@
  *                                                                           *
 \*===========================================================================*/
 
-/*===========================================================================*\
- *                                                                           *
- *   $Revision$                                                         *
- *   $Date$                    *
- *   $LastChangedBy$                                                *
- *                                                                           *
-\*===========================================================================*/
-
 #ifndef BASEPROPERTY_HH_
 #define BASEPROPERTY_HH_
 
 #include <string>
 
 #include "OpenVolumeMeshHandle.hh"
+#include "OpenVolumeMesh/Config/Export.hh"
 
 namespace OpenVolumeMesh {
 
 class ResourceManager;
 
-class BaseProperty {
+class OVM_EXPORT BaseProperty {
 public:
     friend class ResourceManager;
 
-    explicit BaseProperty(ResourceManager& _resMan) : resMan_(&_resMan) {}
+    explicit BaseProperty(ResourceManager* _resMan) : resMan_(_resMan) {}
 
-    BaseProperty(const BaseProperty& _cpy) : resMan_(_cpy.resMan_) {}
-
+    BaseProperty(const BaseProperty& _other) = default;
     BaseProperty& operator=(const BaseProperty& _cpy) = delete;
+    BaseProperty(BaseProperty&& _other) {
+        resMan_ = _other.resMan_;
+        _other.resMan_ = nullptr;
+    }
+    BaseProperty& operator=(BaseProperty&& _other) {
+        resMan_ = _other.resMan_;
+        _other.resMan_ = nullptr;
+        return *this;
+    }
 
-    virtual ~BaseProperty() {}
+
+    virtual ~BaseProperty();
 
     virtual const std::string& name() const = 0;
 
@@ -87,7 +89,19 @@ public:
 
     virtual const std::string typeNameWrapper() const = 0;
 
+    virtual size_t size() const = 0;
+
 protected:
+
+    virtual const std::string &internal_type_name() const = 0;
+
+    /// Copy data from other property. `other` MUST point to an object with the same type as `this`!
+    /// Currently no type check is performed.
+    virtual void assign_values_from(const BaseProperty *other) = 0;
+
+    /// Move data from other property. `other` MUST point to an object with the same type as `this`!
+    /// Currently no type check is performed.
+    virtual void move_values_from(BaseProperty *other) = 0;
 
     virtual void delete_multiple_entries(const std::vector<bool>& _tags) = 0;
 

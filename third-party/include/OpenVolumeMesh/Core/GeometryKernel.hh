@@ -32,19 +32,12 @@
  *                                                                           *
 \*===========================================================================*/
 
-/*===========================================================================*\
- *                                                                           *
- *   $Revision$                                                         *
- *   $Date$                    *
- *   $LastChangedBy$                                                *
- *                                                                           *
-\*===========================================================================*/
-
 #ifndef GEOMETRYKERNEL_HH_
 #define GEOMETRYKERNEL_HH_
 
 #include <cassert>
 #include <iostream>
+#include <type_traits>
 
 #include "../Geometry/VectorT.hh"
 #include "TopologyKernel.hh"
@@ -59,13 +52,19 @@ public:
     typedef TopologyKernelT KernelT;
 
     /// Constructor
-    GeometryKernel() {}
+    GeometryKernel() = default;
 
     /// Destructor
-    ~GeometryKernel() {}
+    ~GeometryKernel() override = default;
+
+    template<class OtherTopoKernel>
+    void assign(const GeometryKernel<VecT, OtherTopoKernel> *other) {
+        TopologyKernelT::assign(other);
+        other->clone_vertices(vertices_);
+    }
 
     /// Override of empty add_vertex function
-    virtual VertexHandle add_vertex() { return add_vertex(VecT()); }
+    VertexHandle add_vertex() override { return add_vertex(VecT()); }
 
     /// Add a geometric point to the mesh
     VertexHandle add_vertex(const VecT& _p) {
@@ -82,15 +81,15 @@ public:
 
         assert(_vh.idx() < (int)vertices_.size());
 
-        vertices_[_vh.idx()] = _p;
+        vertices_[_vh.uidx()] = _p;
     }
 
     /// Get point _vh's coordinates
     const VecT& vertex(const VertexHandle& _vh) const {
-        return vertices_[_vh.idx()];
+        return vertices_[_vh.uidx()];
     }
 
-    virtual VertexIter delete_vertex(const VertexHandle& _h) {
+    VertexIter delete_vertex(const VertexHandle& _h) override {
         assert(_h.idx() < (int)TopologyKernelT::n_vertices());
 
         VertexIter nV = TopologyKernelT::delete_vertex(_h);
@@ -105,7 +104,7 @@ public:
         return nV;
     }
 
-    virtual void collect_garbage()
+    void collect_garbage() override
     {
         if (!TopologyKernelT::needs_garbage_collection())
             return;
@@ -124,7 +123,7 @@ public:
 
     }
 
-    virtual void swap_vertex_indices(VertexHandle _h1, VertexHandle _h2)
+    void swap_vertex_indices(VertexHandle _h1, VertexHandle _h2) override
     {
         assert(_h1.idx() >= 0 && _h1.idx() < (int)vertices_.size());
         assert(_h2.idx() >= 0 && _h2.idx() < (int)vertices_.size());
@@ -132,14 +131,14 @@ public:
         if (_h1 == _h2)
             return;
 
-        std::swap(vertices_[_h1.idx()], vertices_[_h2.idx()]);
+        std::swap(vertices_[_h1.uidx()], vertices_[_h2.uidx()]);
 
         TopologyKernelT::swap_vertex_indices(_h1, _h2);
     }
 
 protected:
 
-    virtual void delete_multiple_vertices(const std::vector<bool>& _tag) {
+    void delete_multiple_vertices(const std::vector<bool>& _tag) override{
 
         assert(_tag.size() == TopologyKernelT::n_vertices());
 
@@ -165,16 +164,24 @@ protected:
 
 public:
 
-    virtual void clear(bool _clearProps = true) {
+    void clear(bool _clearProps = true) override {
 
         vertices_.clear();
         TopologyKernelT::clear(_clearProps);
     }
 
-    typename PointT::value_type length(const EdgeHandle& _eh) const {
+    typename PointT::value_type length(const HalfEdgeHandle& _heh) const {
+        return vector(_heh).length();
+    }
 
-        const typename TopologyKernelT::Edge& e = TopologyKernelT::edge(_eh);
-        return (vertex(e.to_vertex()) - vertex(e.from_vertex())).length();
+    typename PointT::value_type length(const EdgeHandle& _eh) const {
+        return vector(_eh).length();
+    }
+
+    PointT vector(const HalfEdgeHandle& _heh) const {
+
+        const typename TopologyKernelT::Edge& e = TopologyKernelT::halfedge(_heh);
+        return (vertex(e.to_vertex()) - vertex(e.from_vertex()));
     }
 
     PointT vector(const EdgeHandle& _eh) const {
@@ -209,6 +216,28 @@ public:
         }
         p /= valence;
         return p;
+    }
+
+    /// Compute halfface normal assuming planarity (just uses first 2 edges)
+    /// Note: NormalAttrib provides fast access to precomputed normals.
+    PointT normal(const HalfFaceHandle& _hfh) const
+    {
+        if(TopologyKernelT::halfface(_hfh).halfedges().size() < 3) {
+            std::cerr << "Warning: Degenerate face: "
+                      << TopologyKernelT::face_handle(_hfh) << std::endl;
+            return PointT {0.0, 0.0, 0.0};
+        }
+
+        const std::vector<HalfEdgeHandle>& halfedges = TopologyKernelT::halfface(_hfh).halfedges();
+        std::vector<HalfEdgeHandle>::const_iterator he_it = halfedges.begin();
+
+        const PointT &p1 = vertex(TopologyKernelT::halfedge(*he_it).from_vertex());
+        const PointT &p2 = vertex(TopologyKernelT::halfedge(*he_it).to_vertex());
+        ++he_it;
+        const PointT &p3 = vertex(TopologyKernelT::halfedge(*he_it).to_vertex());
+
+        const PointT n = (p2 - p1).cross(p3 - p2);
+        return n.normalized();
     }
 
     void clone_vertices(std::vector<VecT>& _copy) const {

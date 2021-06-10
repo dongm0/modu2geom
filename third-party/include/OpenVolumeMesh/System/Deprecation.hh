@@ -1,5 +1,7 @@
 #pragma once
 
+#include "OpenVolumeMesh/Config/DeprecationConfig.hh"
+
 #if defined(__cplusplus) && (__cplusplus >= 201402L)
 #  define OVM_DEPRECATED(msg) [[deprecated(msg)]]
 #elif defined(__GNUC__) || defined(__clang__)

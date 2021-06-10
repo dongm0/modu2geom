@@ -59,7 +59,7 @@ inline void transform_hex_to_matrix(
     const auto &_p = mesh.vertex(_vh);
     V.row(_vn) = Vector3d{_p[0], _p[1], _p[2]};
     if (fixed.find(_vh) != fixed.end()) {
-      b(bnumber) = _vh;
+      b(bnumber) = _vh.idx();
       bc.row(bnumber) = Vector3d{fixed[_vh][0], fixed[_vh][1], fixed[_vh][2]};
       bnumber++;
     }
@@ -111,7 +111,7 @@ inline void transform_hex_to_matrix(
     const auto &_p = mesh.vertex(_vh);
     V.row(_vn) = Vector3d{_p[0], _p[1], _p[2]};
     if (fixed.find(_vh) != fixed.end()) {
-      b(bnumber) = _vh;
+      b(bnumber) = _vh.idx();
       bc.row(bnumber) = Vector3d{fixed[_vh][0], fixed[_vh][1], fixed[_vh][2]};
       bnumber++;
     }

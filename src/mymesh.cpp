@@ -74,14 +74,14 @@ bool MyMesh::ReadTopoFromFile(const std::string &filename) {
     return false;
   }
 
-  uint8_t _cnum = 0;
-  uint8_t _vnum = 0;
+  uint32_t _cnum = 0;
+  uint32_t _vnum = 0;
   int _tmp;
   fin >> _tmp;
   _cnum = _tmp;
-  m_cells.assign(_cnum, std::vector<uint8_t>(8));
-  for (uint8_t i = 0; i < _cnum; ++i) {
-    for (uint8_t j = 0; j < 8; ++j) {
+  m_cells.assign(_cnum, std::vector<uint32_t>(8));
+  for (uint32_t i = 0; i < _cnum; ++i) {
+    for (uint32_t j = 0; j < 8; ++j) {
       fin >> _tmp;
       m_cells[i][j] = _tmp;
       _vnum = std::max(_vnum, m_cells.at(i).at(j));
@@ -91,22 +91,22 @@ bool MyMesh::ReadTopoFromFile(const std::string &filename) {
   _vnum += 1;
 
   // add vertices
-  for (uint8_t i = 0; i < _vnum; ++i) {
+  for (uint32_t i = 0; i < _vnum; ++i) {
     auto topo_v = m_topomesh.add_vertex();
     m_topo_vertices.push_back(topo_v);
   }
 
   // add topo cells
   std::vector<VertexHandle> _cell(8);
-  for (uint8_t i = 0; i < _cnum; ++i) {
-    for (uint8_t j = 0; j < 8; ++j) {
+  for (uint32_t i = 0; i < _cnum; ++i) {
+    for (uint32_t j = 0; j < 8; ++j) {
       _cell[j] = (m_topo_vertices.at(m_cells.at(i).at(j)));
     }
-    std::swap(_cell[1], _cell[3]);
+    std::swap(_cell[5], _cell[7]);
 #ifdef OVM_TOPOLOGY_CHECK
     m_topomesh.add_cell(_cell, true);
 #else
-    m_topomesh.add_cell(_cell, true); // false
+    m_topomesh.add_cell(_cell, false); // false
 #endif
   }
   return true;
