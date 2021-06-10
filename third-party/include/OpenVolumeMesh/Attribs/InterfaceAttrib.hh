@@ -33,76 +33,72 @@
  *                                                                           *
 \*===========================================================================*/
 
-#include "../Core/Iterators.hh"
+#include "../Core/OpenVolumeMeshProperty.hh"
+#include "../Core/OpenVolumeMeshHandle.hh"
+#include "../Core/PropertyDefines.hh"
 #include "OpenVolumeMesh/Config/Export.hh"
-
-#include <array>
+#include "../Core/TopologyKernel.hh"
 
 namespace OpenVolumeMesh {
 
-class TetrahedralMeshTopologyKernel;
+class TopologyKernel;
 
-
-/** \brief Iterate over all vertices of a hexahedron in a specific order
- *
- * Vertices are addressed in the following order: vertices of one halfface in ccw order, then the remaining vertex
- *
+/**
+ * @brief InterfaceAttrib stores if an entity is part of an interface,
+ * e.g. an material boundary inside the volume.
  */
-
-class OVM_EXPORT TetVertexIter : public BaseCirculator<CellHandle,
-    VertexHandle> {
-private:
-    typedef BaseCirculator<CellHandle,
-            VertexHandle> BaseIter;
+class OVM_EXPORT InterfaceAttrib {
+    using boolref = std::vector<bool>::reference;
 public:
-    TetVertexIter(const CellHandle& _ref_h,
-                  const TetrahedralMeshTopologyKernel* _mesh,
-                  int _max_laps = 1);
+    explicit InterfaceAttrib(TopologyKernel& _kernel);
+    ~InterfaceAttrib() = default;
 
-    // Post increment/decrement operator
-    TetVertexIter operator++(int) {
-        TetVertexIter cpy = *this;
-        ++(*this);
-        return cpy;
-    }
-    TetVertexIter operator--(int) {
-        TetVertexIter cpy = *this;
-        --(*this);
-        return cpy;
-    }
-    TetVertexIter operator+(int _n) {
-        TetVertexIter cpy = *this;
-        for(int i = 0; i < _n; ++i) {
-            ++cpy;
-        }
-        return cpy;
-    }
-    TetVertexIter operator-(int _n) {
-        TetVertexIter cpy = *this;
-        for(int i = 0; i < _n; ++i) {
-            --cpy;
-        }
-        return cpy;
-    }
-    TetVertexIter& operator+=(int _n) {
-        for(int i = 0; i < _n; ++i) {
-            ++(*this);
-        }
-        return *this;
-    }
-    TetVertexIter& operator-=(int _n) {
-        for(int i = 0; i < _n; ++i) {
-            --(*this);
-        }
-        return *this;
+    bool operator[](const VertexHandle& _h) const {
+        return v_interface_[_h];
     }
 
-    TetVertexIter& operator++();
-    TetVertexIter& operator--();
+    boolref operator[](const VertexHandle& _h) {
+        return v_interface_[_h];
+    }
 
-private:
-    std::array<VertexHandle, 4> vertices_;
-    size_t cur_index_;
+    bool operator[](const EdgeHandle& _h) const {
+        return e_interface_[_h];
+    }
+
+    boolref operator[](const EdgeHandle& _h) {
+        return e_interface_[_h];
+    }
+
+    bool operator[](const HalfEdgeHandle& _h) const {
+        return e_interface_[kernel_.edge_handle(_h)];
+    }
+
+    boolref operator[](const HalfEdgeHandle& _h) {
+        return e_interface_[kernel_.edge_handle(_h)];
+    }
+
+    bool operator[](const FaceHandle& _h) const {
+        return f_interface_[_h];
+    }
+
+    boolref operator[](const FaceHandle& _h) {
+        return f_interface_[_h];
+    }
+
+    bool operator[](const HalfFaceHandle& _h) const {
+        return f_interface_[kernel_.face_handle(_h)];
+    }
+
+    boolref operator[](const HalfFaceHandle& _h) {
+        return f_interface_[kernel_.face_handle(_h)];
+    }
+
+    TopologyKernel& kernel_;
+
+    VertexPropertyT<bool> v_interface_;
+    EdgePropertyT<bool> e_interface_;
+    FacePropertyT<bool> f_interface_;
 };
+
 
 } // Namespace OpenVolumeMesh

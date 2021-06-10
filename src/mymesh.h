@@ -117,7 +117,7 @@ private:
   OpenVolumeMesh::TopologicHexahedralMesh m_topomesh;
   std::vector<OpenVolumeMesh::VertexHandle> m_vertices;
   std::vector<OpenVolumeMesh::VertexHandle> m_topo_vertices;
-  std::vector<std::vector<uint8_t>> m_cells;
+  std::vector<std::vector<uint32_t>> m_cells;
   std::map<OpenVolumeMesh::CellHandle, OpenVolumeMesh::CellHandle>
       m_m2tm_mapping;
   std::map<OpenVolumeMesh::CellHandle, OpenVolumeMesh::CellHandle>

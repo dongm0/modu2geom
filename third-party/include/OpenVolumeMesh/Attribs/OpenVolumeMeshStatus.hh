@@ -32,31 +32,23 @@
  *                                                                           *
 \*===========================================================================*/
 
-/*===========================================================================*\
- *                                                                           *
- *   $Revision$                                                          *
- *   $Date$                   *
- *   $LastChangedBy$                                                *
- *                                                                           *
-\*===========================================================================*/
-
 #ifndef STATUS_HH_
 #define STATUS_HH_
 
 #include <iosfwd>
+#include "OpenVolumeMesh/Config/Export.hh"
 
 namespace OpenVolumeMesh {
 
 /** \class OpenVolumeMeshStatus
  *
- * \brief Stores statuses like selected, tagged, deleted, etc.
+ * \brief Stores statuses like selected, tagged, deleted, hidden.
  */
 
-class OpenVolumeMeshStatus {
+class OVM_EXPORT OpenVolumeMeshStatus {
 public:
 
-    // Default constructor
-    OpenVolumeMeshStatus() : selected_(false), tagged_(false), deleted_(false) {}
+    OpenVolumeMeshStatus() = default;
 
     bool selected() const { return selected_; }
 
@@ -64,19 +56,25 @@ public:
 
     bool deleted() const { return deleted_; }
 
+    bool hidden() const { return hidden_;}
+
     void set_selected(bool _selected) { selected_ = _selected; }
 
     void set_tagged(bool _tagged) { tagged_ = _tagged; }
 
     void set_deleted(bool _deleted) { deleted_ = _deleted; }
 
+    void set_hidden(bool _hidden) {hidden_ = _hidden;}
+
 private:
 
-    bool selected_;
+    bool selected_ = false;
 
-    bool tagged_;
+    bool tagged_ = false;
 
-    bool deleted_;
+    bool deleted_ = false;
+
+    bool hidden_ = false;
 };
 
 std::ostream& operator<<(std::ostream& _ostr, const OpenVolumeMeshStatus& _status);

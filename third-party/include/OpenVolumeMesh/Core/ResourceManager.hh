@@ -39,17 +39,25 @@
 #endif
 #include <string>
 #include <vector>
+#include <type_traits>
 
+#include "../System/Compiler.hh"
+#include "OpenVolumeMesh/Config/Export.hh"
 #include "OpenVolumeMeshProperty.hh"
 #include "PropertyHandles.hh"
+#include "TypeName.hh"
 #include "ForwardDeclarations.hh"
+
+#if OVM_CXX_17
+#include <optional>
+#endif
 
 namespace OpenVolumeMesh {
 
 // Forward declarations
 class BaseProperty;
 
-class ResourceManager {
+class OVM_EXPORT ResourceManager {
 public:
     ResourceManager() = default;
     ResourceManager(const ResourceManager &other);
@@ -99,7 +107,7 @@ protected:
     {
         PropIterator p_iter =  _begin;
         for (; p_iter != _end; ++p_iter)
-            (*p_iter)->swap_elements(_h1.idx(), _h2.idx());
+            (*p_iter)->swap_elements(_h1.uidx(), _h2.uidx());
     }
 
 
@@ -132,6 +140,24 @@ public:
     /// Get number of cells in mesh
     virtual size_t n_cells() const = 0;
 
+
+    /** Get or create property: if the property does not exist yet, create it.
+     */
+    template<typename T, typename EntityTag>
+    PropertyTT<T, EntityTag> request_property(const std::string& _name = std::string(), const T _def = T());
+
+#if OVM_CXX_17
+    /** Create new property: if the property already exists, return no value.
+     */
+    template<typename T, typename EntityTag>
+    std::optional<PropertyTT<T, EntityTag>> create_property(const std::string& _name = std::string(), const T _def = T());
+
+    /** Get existing property: if the property does not exist, return no value.
+     */
+    template<typename T, typename EntityTag>
+    std::optional<PropertyTT<T, EntityTag>> get_property(const std::string& _name = std::string());
+#endif
+
     template<class T> VertexPropertyT<T> request_vertex_property(const std::string& _name = std::string(), const T _def = T());
 
     template<class T> EdgePropertyT<T> request_edge_property(const std::string& _name = std::string(), const T _def = T());
@@ -145,6 +171,7 @@ public:
     template<class T> CellPropertyT<T> request_cell_property(const std::string& _name = std::string(), const T _def = T());
 
     template<class T> MeshPropertyT<T> request_mesh_property(const std::string& _name = std::string(), const T _def = T());
+
 
 private:
 
@@ -178,19 +205,8 @@ public:
 
     size_t n_mesh_props() const { return mesh_props_.size(); }
 
-    template<class T> void set_persistent(VertexPropertyT<T>& _prop, bool _flag = true);
-
-    template<class T> void set_persistent(EdgePropertyT<T>& _prop, bool _flag = true);
-
-    template<class T> void set_persistent(HalfEdgePropertyT<T>& _prop, bool _flag = true);
-
-    template<class T> void set_persistent(FacePropertyT<T>& _prop, bool _flag = true);
-
-    template<class T> void set_persistent(HalfFacePropertyT<T>& _prop, bool _flag = true);
-
-    template<class T> void set_persistent(CellPropertyT<T>& _prop, bool _flag = true);
-
-    template<class T> void set_persistent(MeshPropertyT<T>& _prop, bool _flag = true);
+    template<typename T, class EntityTag>
+    void set_persistent(PropertyTT<T, EntityTag>& _prop, bool _flag = true);
 
     typedef std::vector<BaseProperty*> Properties;
 
@@ -225,7 +241,9 @@ public:
 private:
 
     template <class FullPropT, class PropIterT>
-    bool property_exists(const PropIterT& _begin, const PropIterT& _end, const std::string& _name) const {
+    bool property_exists(const PropIterT& _begin, const PropIterT& _end, const std::string& _name) const
+    {
+        auto type_name = get_type_name<typename FullPropT::value_type>();
 
         if(_name.empty()) {
 #ifndef NDEBUG
@@ -238,16 +256,10 @@ private:
         PropIterT it = _begin;
         for(; it != _end; ++it)
         {
-            if((*it)->name() == _name )
+            if((*it)->name() == _name
+                && (*it)->internal_type_name() == type_name)
             {
-#if OVM_FORCE_STATIC_CAST
-            return true;
-#else
-            if(dynamic_cast<FullPropT*>(*it) != NULL)
-            {
-            return true;
-            }
-#endif
+                return true;
             }
         }
         return false;
@@ -311,17 +323,23 @@ private:
     template<class StdVecT>
     void remove_property(StdVecT& _vec, size_t _idx);
 
-    template<class StdVecT, class PropT, class HandleT, class T>
-    PropT request_property(StdVecT& _vec, const std::string& _name, size_t _size, const T _def = T());
+    template<typename T, typename EntityTag>
+    PropertyTT<T, EntityTag> *internal_find_property(const std::string& _name);
 
-    template<class PropT>
-    void set_persistentT(PropT& _prop, bool _flag);
+    template<typename T, typename EntityTag>
+    PropertyTT<T, EntityTag> internal_create_property(const std::string& _name, const T _def = T());
 
     template<class StdVecT>
     void clearVec(StdVecT& _vec);
 
     template<class StdVecT>
     void updatePropHandles(StdVecT& _vec);
+
+    template<bool Move>
+    void assignProperties(typename std::conditional<Move, Properties&, const Properties&>::type src,
+                          Properties &dest);
+    template<bool Move>
+    void assignAllPropertiesFrom(typename std::conditional<Move, ResourceManager*, const ResourceManager*>::type src);
 
     Properties vertex_props_;
 
@@ -336,6 +354,12 @@ private:
     Properties cell_props_;
 
     Properties mesh_props_;
+
+    template<typename Entity>
+    Properties &entity_props();
+
+    template<typename Entity>
+    size_t n();
 };
 
 }
