@@ -34,7 +34,7 @@ set(TETGEN_LIB_DIR "${CMAKE_SOURCE_DIR}/third-party/lib/" CACHE PATH tet)
 #set(OVM_LIB_DIR "C:\\Users\\Mort_\\Documents\\OpenVolumeMesh-master\\build\\install\\lib" CACHE PATH ovm)
 #set(TETGEN_INCLUDE_DIR "C:\\Users\\Mort_\\Documents\\github\\tetgen" CACHE PATH tet)
 #set(TETGEN_LIB_DIR "C:\\Users\\Mort_\\Documents\\github\\tetgen\\build\\RelWithDebInfo" CACHE PATH tet)
-MESSAGE(STATUS ${INCLUDE_DIRECTORIES})
+#MESSAGE(STATUS ${INCLUDE_DIRECTORIES})
 
 add_subdirectory(./src)
 

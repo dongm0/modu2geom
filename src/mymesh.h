@@ -31,6 +31,7 @@ public:
   bool WriteGeomToVTKFile(const std::string &filename);
   bool WriteGeomToVTKFile(const std::string &filename,
                           std::vector<OpenVolumeMesh::VertexHandle> &_tagged);
+  bool WriteGeomToVTKFileUseTopoMesh(const std::string &filename);
   bool GenerateOrder();
   bool GenerateOneCell(const OpenVolumeMesh::CellHandle &_ch);
 
@@ -113,12 +114,13 @@ private:
   // std::vector<untangleData> &uData);
 
 private:
-  //私有变量
+  //
   OpenVolumeMesh::GeometricHexahedralMeshV3d m_mesh;
   OpenVolumeMesh::TopologicHexahedralMesh m_topomesh;
   std::vector<OpenVolumeMesh::VertexHandle> m_vertices;
   std::vector<OpenVolumeMesh::VertexHandle> m_topo_vertices;
-  std::vector<std::vector<uint32_t>> m_cells;
+  std::vector<std::array<uint32_t, 8>> m_cells;
+  std::map<uint32_t, OpenVolumeMesh::VertexHandle> m_vids;
   std::map<OpenVolumeMesh::CellHandle, OpenVolumeMesh::CellHandle>
       m_m2tm_mapping;
   std::map<OpenVolumeMesh::CellHandle, OpenVolumeMesh::CellHandle>

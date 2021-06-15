@@ -1,6 +1,7 @@
 
 #ifndef OVMVTKHEXIO_H
 #define OVMVTKHEXIO_H
+#include "ovmwrap.h"
 #include <OpenVolumeMesh/Mesh/HexahedralMesh.hh>
 
 #include <Eigen/Eigen>
@@ -83,14 +84,17 @@ void OVMWriteHexMesh(HexMesh &mesh, std::ofstream &stream) {
          << std::endl;
   std::vector<VertexHandle> _vtmp;
   for (auto &c : mesh.cells()) {
-    stream << "8 ";
     _vtmp.clear();
-    for (auto v : mesh.hex_vertices(c)) {
-      _vtmp.push_back(v);
-    }
-    stream << _vtmp[1].idx() << " " << _vtmp[0].idx() << " " << _vtmp[3].idx()
-           << " " << _vtmp[2].idx() << " " << _vtmp[7].idx() << " "
-           << _vtmp[4].idx() << " " << _vtmp[5].idx() << " " << _vtmp[6].idx();
+    stream << "8 ";
+    auto _xbf = mesh.xback_halfface(c);
+    auto _range = mesh.halfface_vertices(_xbf);
+    _vtmp.assign(_range.first, _range.second);
+    auto _face_xf =
+        opposite_vertex_in_cell(mesh, c, mesh.xback_halfface(c), _vtmp);
+    stream << _vtmp[0].idx() << " " << _vtmp[1].idx() << " " << _vtmp[2].idx()
+           << " " << _vtmp[3].idx() << " " << _face_xf[0].idx() << " "
+           << _face_xf[1].idx() << " " << _face_xf[2].idx() << " "
+           << _face_xf[3].idx();
     stream << std::endl;
   }
   stream << "CELL_TYPES " << mesh.n_cells() << std::endl;

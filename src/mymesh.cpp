@@ -80,30 +80,27 @@ bool MyMesh::ReadTopoFromFile(const std::string &filename) {
   int _tmp;
   fin >> _tmp;
   _cnum = _tmp;
-  m_cells.assign(_cnum, std::vector<uint32_t>(8));
+  m_cells.resize(_cnum);
   for (uint32_t i = 0; i < _cnum; ++i) {
     for (uint32_t j = 0; j < 8; ++j) {
       fin >> _tmp;
       m_cells[i][j] = _tmp;
-      _vnum = std::max(_vnum, m_cells.at(i).at(j));
+      if (m_vids.count(_tmp) == 0) {
+        auto vid = m_topomesh.add_vertex();
+        m_vids[_tmp] = vid;
+      }
     }
   }
   fin.close();
-  _vnum += 1;
-
-  // add vertices
-  for (uint32_t i = 0; i < _vnum; ++i) {
-    auto topo_v = m_topomesh.add_vertex();
-    m_topo_vertices.push_back(topo_v);
-  }
+  _vnum = m_vids.size();
 
   // add topo cells
   std::vector<VertexHandle> _cell(8);
   for (uint32_t i = 0; i < _cnum; ++i) {
     for (uint32_t j = 0; j < 8; ++j) {
-      _cell[j] = (m_topo_vertices.at(m_cells.at(i).at(j)));
+      _cell[j] = m_vids.at(m_cells[i][j]);
     }
-    std::swap(_cell[5], _cell[7]);
+    std::swap(_cell[3], _cell[1]);
 #ifdef OVM_TOPOLOGY_CHECK
     m_topomesh.add_cell(_cell, true);
 #else
@@ -149,6 +146,34 @@ bool MyMesh::WriteGeomToVTKFile(
   OVMWriteHexMesh(m_mesh, fout, _tagged);
   fout.close();
   return true;
+}
+bool MyMesh::WriteGeomToVTKFileUseTopoMesh(const std::string &filename) {
+  std::ofstream stream;
+  stream.open(filename);
+  stream << "# vtk DataFile Version 3.0\ngenerate by dongmo\nASCII\nDATASET "
+            "UNSTRUCTURED_GRID"
+         << std::endl;
+  stream << "POINTS " << m_topomesh.n_vertices() << " double" << std::endl;
+  for (auto &v : m_topomesh.vertices()) {
+    auto p = m_mesh.vertex(m_tm2m_v_mapping[v]);
+    stream << p[0] << " " << p[1] << " " << p[2] << std::endl;
+  }
+  stream << "CELLS " << m_topomesh.n_cells() << " " << 9 * m_topomesh.n_cells()
+         << std::endl;
+  for (int i = 0; i < m_topomesh.n_cells(); ++i) {
+    stream << "8 ";
+    for (int j = 0; j < 8; ++j) {
+      stream << m_vids.at(m_cells[i][j]).idx() << " ";
+    }
+    stream << std::endl;
+  }
+  stream << "CELL_TYPES " << m_topomesh.n_cells() << std::endl;
+  for (uint32_t i = 0; i < m_topomesh.n_cells(); ++i) {
+    stream << "12" << std::endl;
+  }
+  for (auto x : m_vids) {
+    std::cout << x.first << " " << x.second.idx() << std::endl;
+  }
 }
 
 bool MyMesh::GenerateOneCell(const OpenVolumeMesh::CellHandle &_ch) {
