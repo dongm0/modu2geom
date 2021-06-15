@@ -1,4 +1,4 @@
-#include "mymesh.h"
+﻿#include "mymesh.h"
 #include "utils.h"
 
 std::string filepath("/home/dm/github/modu2geom/modudata/modu/");

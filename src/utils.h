@@ -1,12 +1,12 @@
-#include <iostream>
+﻿#include <algorithm>
 #include <fstream>
+#include <iostream>
+#include <map>
+#include <memory>
+#include <set>
 #include <string>
-#include <algorithm>
 #include <unordered_map>
 #include <unordered_set>
-#include <memory>
-#include <map>
-#include <set>
 
 //#define IGL_STATIC_LIBRARY
 /*

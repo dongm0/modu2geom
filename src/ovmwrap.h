@@ -1,4 +1,4 @@
-#ifndef OVMWRAP_H
+﻿#ifndef OVMWRAP_H
 #define OVMWRAP_H
 
 #include "utils.h"

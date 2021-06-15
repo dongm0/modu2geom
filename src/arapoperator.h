@@ -1,4 +1,4 @@
-#ifndef ARAPOPERATOR_H
+﻿#ifndef ARAPOPERATOR_H
 #define ARAPOPERATOR_H
 
 #include "my_scaf.h"

@@ -1,4 +1,4 @@
-#ifndef MYMESH_H
+﻿#ifndef MYMESH_H
 #define MYMESH_H
 
 #include <OpenVolumeMesh/FileManager/FileManager.hh>

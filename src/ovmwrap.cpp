@@ -1,4 +1,4 @@
-#ifndef OVMWRAP_IMPL
+﻿#ifndef OVMWRAP_IMPL
 #define OVMWRAP_IMPL
 
 #include "ovmwrap.h"
