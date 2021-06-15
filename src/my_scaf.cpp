@@ -1,3 +1,4 @@
+
 // This file is part of libigl, a simple c++ geometry processing library.
 //
 // Copyright (C) 2016 Michael Rabinovich
@@ -437,7 +438,7 @@ IGL_INLINE void calculate_scaf_tetgen(SLIMData &s) {
 
   s.w_V.conservativeResize(s.V_o.rows() + addinVnum1 + addinVnum2, 3);
   s.w_V.topRows(s.V_o.rows()) = s.V_o;
-  for (uint i = 0; i < addinVnum2 + addinVnum1; ++i) {
+  for (uint32_t i = 0; i < addinVnum2 + addinVnum1; ++i) {
     int _t = s.m_surface_vn + i;
     s.w_V.row(s.V_o.rows() + i) =
         Vector3d(out.pointlist[_t * 3 + 0], out.pointlist[_t * 3 + 1],

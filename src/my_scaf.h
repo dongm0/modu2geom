@@ -8,14 +8,16 @@
 #ifndef MY_SCAF_H
 #define MY_SCAF_H
 
-#include <igl/igl_inline.h>
-#include <igl/MappingEnergyType.h>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
+#include <igl/MappingEnergyType.h>
+#include <igl/igl_inline.h>
 
-// This option makes the iterations faster (all except the first) by caching the 
-// sparsity pattern of the matrix involved in the assembly. It should be on if you plan to do many iterations, off if you have to change the matrix structure at every iteration.
-#define SLIM_CACHED 
+// This option makes the iterations faster (all except the first) by caching the
+// sparsity pattern of the matrix involved in the assembly. It should be on if
+// you plan to do many iterations, off if you have to change the matrix
+// structure at every iteration.
+#define SLIM_CACHED
 
 #ifdef SLIM_CACHED
 #include <igl/AtA_cached.h>
@@ -111,9 +113,7 @@ IGL_INLINE void slim_buildA(const Eigen::SparseMatrix<double> &Dx,
                             const Eigen::MatrixXd &W,
                             std::vector<Eigen::Triplet<double>> &IJV);
 } // namespace my_scaf
-}
-
-
+} // namespace igl
 
 //#ifndef IGL_STATIC_LIBRARY
 #include "my_scaf.cpp"
