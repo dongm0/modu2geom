@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
 #ifdef NDEBUG
   mesh.ReadTopoFromFile(std::string(argv[1]));
 #else
-  mesh.ReadTopoFromFile(std::string(argv[1]));
+  mesh.ReadTopoFromVTKFile(std::string(argv[1]));
   // mesh.ReadTopoFromFile(filepath + ifilename);
 #endif
   mesh.GenerateOrder();
@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
     }
     mesh.GenerateOneCell(mesh.GetCurrentCellHandle());
     mesh.Optimize();
-    // mesh.WriteGeomToVTKFile(std::to_string(i) + ".vtk");
+    mesh.WriteGeomToVTKFile(std::to_string(i) + ".vtk");
     std::cout << i << std::endl;
   }
   mesh.WriteGeomToVTKFileUseTopoMesh(ofilename);

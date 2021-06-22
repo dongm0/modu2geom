@@ -44,6 +44,6 @@ void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm,
   igl::my_scaf::slim_precompute(refV, T, V, surface, data,
                                 igl::MappingEnergyType::SYMMETRIC_DIRICHLET, b,
                                 bc, 1e6);
-  igl::my_scaf::slim_solve(data, 5);
+  igl::my_scaf::slim_solve(data, 3);
   transform_matrix_to_hex(data.V_o, _ovm);
 }

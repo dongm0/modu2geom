@@ -28,6 +28,7 @@ class MyMesh {
 public:
   //可以用>>操作符
   bool ReadTopoFromFile(const std::string &filename);
+  bool ReadTopoFromVTKFile(const std::string &filename);
   bool WriteGeomToVTKFile(const std::string &filename);
   bool WriteGeomToVTKFile(const std::string &filename,
                           std::vector<OpenVolumeMesh::VertexHandle> &_tagged);
@@ -131,6 +132,10 @@ private:
       m_tm2m_v_mapping;
 
   std::vector<OpenVolumeMesh::CellHandle> m_generate_order;
+  OpenVolumeMesh::Geometry::Vec3d m_inner_p0;
+  OpenVolumeMesh::Geometry::Vec3d m_inner_p1;
+  OpenVolumeMesh::Geometry::Vec3d m_inner_p2;
+  double m_inner_length;
   int m_cur_idx = 0;
 };
 #endif

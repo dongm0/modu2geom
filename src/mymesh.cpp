@@ -110,6 +110,99 @@ bool MyMesh::ReadTopoFromFile(const std::string &filename) {
   return true;
 }
 
+bool MyMesh::ReadTopoFromVTKFile(const std::string &filename) {
+  using namespace OpenVolumeMesh;
+
+  std::ifstream fin;
+  fin.open(filename);
+  if (fin.fail()) {
+    return false;
+  }
+  std::stringstream ss;
+  std::string line;
+  std::string stmp;
+
+  uint32_t _cnum = 0;
+  uint32_t _vnum = 0;
+
+  std::getline(fin, line);
+  std::getline(fin, line);
+  std::getline(fin, line);
+  if (line != "ASCII") {
+    throw std::runtime_error("ascii only!");
+  }
+  std::getline(fin, line);
+  std::getline(fin, line);
+  ss.clear();
+  ss.str(line);
+  ss >> stmp >> _vnum >> stmp;
+
+  for (uint32_t i = 0; i < _vnum; ++i) {
+    std::getline(fin, line);
+    m_topomesh.add_vertex();
+    if (i == 0) {
+      ss.clear();
+      ss.str(line);
+      double _x, _y, _z;
+      ss >> _x >> _y >> _z;
+      m_inner_p0[0] = _x, m_inner_p0[1] = _y, m_inner_p0[2] = _z;
+    } else if (i == 1) {
+      ss.clear();
+      ss.str(line);
+      double _x, _y, _z;
+      ss >> _x >> _y >> _z;
+      m_inner_p1[0] = _x, m_inner_p1[1] = _y, m_inner_p1[2] = _z;
+      m_inner_length = (m_inner_p0 - m_inner_p1).length();
+    } else if (i == 2) {
+      ss.clear();
+      ss.str(line);
+      double _x, _y, _z;
+      ss >> _x >> _y >> _z;
+      OpenVolumeMesh::Geometry::Vec3d _p2;
+      _p2[0] = _x, _p2[1] = _y, _p2[2] = _z;
+      m_inner_p2 = m_inner_p1 + (projectVectoPlane(_p2 - m_inner_p1,
+                                                   m_inner_p1 - m_inner_p0))
+                                        .normalized() *
+                                    m_inner_length;
+    }
+  }
+  std::getline(fin, line);
+  ss.clear();
+  ss.str(line);
+  ss >> stmp >> _cnum >> stmp;
+
+  int _tmp;
+  m_cells.resize(_cnum);
+  for (uint32_t i = 0; i < _cnum; ++i) {
+    fin >> _tmp;
+    for (uint32_t j = 0; j < 8; ++j) {
+      fin >> _tmp;
+      m_cells[i][j] = _tmp;
+      if (m_vids.count(_tmp) == 0) {
+        // auto vid = m_topomesh.add_vertex();
+        m_vids[_tmp] = OpenVolumeMesh::VertexHandle(_tmp);
+      }
+    }
+  }
+  fin.close();
+  _vnum = m_vids.size();
+
+  // add topo cells
+  std::vector<VertexHandle> _cell(8);
+  for (uint32_t i = 0; i < _cnum; ++i) {
+    for (uint32_t j = 0; j < 8; ++j) {
+      _cell[j] = m_vids.at(m_cells[i][j]);
+    }
+    std::swap(_cell[3], _cell[1]);
+#ifdef OVM_TOPOLOGY_CHECK
+    m_topomesh.add_cell(_cell, true);
+#else
+    m_topomesh.add_cell(_cell, false); // false
+#endif
+  }
+  return true;
+}
+
 bool MyMesh::checkTopo() {
   std::vector<int> tmp(10, 0);
   for (auto e : m_topomesh.edges()) {
@@ -237,7 +330,7 @@ bool MyMesh::GenerateOneCell(const OpenVolumeMesh::CellHandle &_ch) {
       AddOneCellCase5(_ch, _nbh, _nbh_hf);
     else if (casenum == 6)
       AddOneCellCase6(_ch, _nbh, _nbh_hf);
-    WriteGeomToVTKFile("tmp.vtk");
+    // WriteGeomToVTKFile("tmp.vtk");
   }
   return true;
 }
@@ -260,14 +353,26 @@ bool MyMesh::AddOneCellCase0(
   assert(topvec.size() == 4);
 #endif
   std::vector<VertexHandle> geomvertices(8);
-  geomvertices[0] = m_mesh.add_vertex(Vec3d(0, 0, 0));
-  geomvertices[1] = m_mesh.add_vertex(Vec3d(1, 0, 0));
-  geomvertices[2] = m_mesh.add_vertex(Vec3d(1, 1, 0));
-  geomvertices[3] = m_mesh.add_vertex(Vec3d(0, 1, 0));
-  geomvertices[4] = m_mesh.add_vertex(Vec3d(0, 0, 1));
-  geomvertices[5] = m_mesh.add_vertex(Vec3d(1, 0, 1));
-  geomvertices[6] = m_mesh.add_vertex(Vec3d(1, 1, 1));
-  geomvertices[7] = m_mesh.add_vertex(Vec3d(0, 1, 1));
+  geomvertices[0] = m_mesh.add_vertex(m_inner_p0);
+  geomvertices[1] = m_mesh.add_vertex(m_inner_p1);
+  geomvertices[2] = m_mesh.add_vertex(m_inner_p2);
+  geomvertices[3] = m_mesh.add_vertex(m_inner_p2 + m_inner_p0 - m_inner_p1);
+  geomvertices[4] = m_mesh.add_vertex(
+      m_inner_p0 +
+      m_inner_length *
+          (m_inner_p2 + m_inner_p0 - m_inner_p1 - m_inner_p1).normalized());
+  geomvertices[5] = m_mesh.add_vertex(
+      m_inner_p1 +
+      m_inner_length *
+          (m_inner_p2 + m_inner_p0 - m_inner_p1 - m_inner_p1).normalized());
+  geomvertices[6] = m_mesh.add_vertex(
+      m_inner_p2 +
+      m_inner_length *
+          (m_inner_p2 + m_inner_p0 - m_inner_p1 - m_inner_p1).normalized());
+  geomvertices[7] = m_mesh.add_vertex(
+      m_inner_p2 + m_inner_p0 - m_inner_p1 +
+      m_inner_length *
+          (m_inner_p2 + m_inner_p0 - m_inner_p1 - m_inner_p1).normalized());
   m_tm2m_v_mapping[bottomvec[0]] = geomvertices[0];
   m_tm2m_v_mapping[bottomvec[1]] = geomvertices[1];
   m_tm2m_v_mapping[bottomvec[2]] = geomvertices[2];
@@ -318,7 +423,7 @@ bool MyMesh::AddOneCellCase1(
     auto p3_mid = cross(m_mesh.vertex(p1) - m_mesh.vertex(p0),
                         m_mesh.vertex(p2) - m_mesh.vertex(p1));
     p3_mid.normalize_cond();
-    p3_mid += m_mesh.vertex(p1);
+    p3_mid = p3_mid * m_inner_length + m_mesh.vertex(p1);
     auto geomvhandle = m_mesh.add_vertex(p3_mid);
     m_m2tm_v_mapping[geomvhandle] = topvec[i];
     m_tm2m_v_mapping[topvec[i]] = geomvhandle;
@@ -445,8 +550,8 @@ bool MyMesh::AddOneCellCase2(
       // std::cout << fixed.size() << std::endl;
     }
     //变形
-    { ArapOperator::Instance().Deformation(m_mesh, fixed); }
-    WriteGeomToVTKFile("tmp.vtk");
+    //{ ArapOperator::Instance().Deformation(m_mesh, fixed); }
+    // WriteGeomToVTKFile("tmp.vtk");
   }
   // end
   VertexHandle p0 = getGeomV(wing1[0]), p1 = getGeomV(wing1[3]),
@@ -455,8 +560,7 @@ bool MyMesh::AddOneCellCase2(
                p5 = getGeomV(wing1[2]);
   auto s1_mid = m_mesh.vertex(p1) + m_mesh.vertex(p2) - 2 * m_mesh.vertex(p0);
   s1_mid = projectVectoPlane(s1_mid, m_mesh.vertex(p0) - m_mesh.vertex(p3));
-  if (s1_mid.length() < 1.f)
-    s1_mid.normalize_cond();
+  s1_mid = s1_mid.normalized() * m_inner_length * sqrt(2);
   s1_mid += m_mesh.vertex(p0);
   auto geoms1 = m_mesh.add_vertex(s1_mid);
   m_tm2m_v_mapping[s1] = geoms1;
@@ -464,8 +568,7 @@ bool MyMesh::AddOneCellCase2(
   // m_mesh.set_vertex(getGeomV(s1), s1_mid);
   auto s2_mid = m_mesh.vertex(p4) + m_mesh.vertex(p5) - 2 * m_mesh.vertex(p3);
   s2_mid = projectVectoPlane(s2_mid, m_mesh.vertex(p0) - m_mesh.vertex(p3));
-  if (s2_mid.length() < 1.f)
-    s2_mid.normalize_cond();
+  s2_mid = s2_mid.normalized() * m_inner_length * sqrt(2);
   s2_mid += m_mesh.vertex(p3);
   auto geoms2 = m_mesh.add_vertex(s2_mid);
   m_tm2m_v_mapping[s2] = geoms2;
@@ -595,7 +698,7 @@ bool MyMesh::AddOneCellCase3(
       fixed[getGeomV(fan3[2])] =
           new_pos[2][0] + new_pos[0][0] - getCoord_topo(fan1[0]);
     }
-    { ArapOperator::Instance().Deformation(m_mesh, fixed); }
+    //{ ArapOperator::Instance().Deformation(m_mesh, fixed); }
   }
 
   // end
@@ -606,18 +709,20 @@ bool MyMesh::AddOneCellCase3(
       m_mesh.vertex(getGeomV(fan2[1])) - m_mesh.vertex(getGeomV(fan2[0]));
   auto s3_mid =
       m_mesh.vertex(getGeomV(fan3[1])) - m_mesh.vertex(getGeomV(fan3[0]));
-  auto jade_coord = s1_mid + s2_mid + s3_mid + m_mesh.vertex(getGeomV(fan1[0]));
+  auto jade_coord =
+      (s1_mid + s2_mid + s3_mid).normalized() * sqrt(3) * m_inner_length +
+      m_mesh.vertex(getGeomV(fan1[0]));
   auto geomjade = m_mesh.add_vertex(jade_coord);
-  m_m2tm_v_mapping[jade] = geomjade;
-  m_tm2m_v_mapping[geomjade] = jade;
+  m_m2tm_v_mapping[geomjade] = jade;
+  m_tm2m_v_mapping[jade] = geomjade;
   // m_mesh.set_vertex(getGeomV(jade), (s1_mid+s2_mid+s3_mid)/3);
 
   auto _fan1_top = opposite_vertex_in_cell(m_topomesh, _ch, _nbhf_vec[0], fan1);
 
   std::vector<VertexHandle> cell_vertices{
-      getGeomV(fan1[0]),      getGeomV(fan1[3]),      getGeomV(fan1[2]),
-      getGeomV(fan1[1]),      getGeomV(_fan1_top[0]), getGeomV(_fan1_top[1]),
-      getGeomV(_fan1_top[2]), getGeomV(_fan1_top[3])};
+      getGeomV(fan1[0]), getGeomV(fan1[3]),      getGeomV(fan1[2]),
+      getGeomV(fan1[1]), getGeomV(_fan1_top[0]), getGeomV(_fan1_top[1]),
+      geomjade,          getGeomV(_fan1_top[3])};
   auto _geomch = m_mesh.add_cell(cell_vertices);
   m_tm2m_mapping[_ch] = _geomch;
   m_m2tm_mapping[_geomch] = _ch;
@@ -729,7 +834,7 @@ bool MyMesh::AddOneCellCase4(
       fixed[getGeomV(wing2[2])] = new_pos[1][0];
       fixed[getGeomV(wing2[3])] = new_pos[1][1];
     }
-    { ArapOperator::Instance().Deformation(m_mesh, fixed); }
+    //{ ArapOperator::Instance().Deformation(m_mesh, fixed); }
     std::vector<VertexHandle> tagged;
     for (auto x : fixed) {
       tagged.push_back(x.first);

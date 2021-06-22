@@ -278,7 +278,7 @@ void MsqOperator::Optimize_old(
   } else {
     IdealShapeTarget target;
     // TShapeSizeB1 m1;
-    TShapeSizeB1 m2;
+    TShapeNB1 m2;
     // TSum mymetric(&m1, &m2);
 
     TQualityMetric metric_0(&target, &m2);
