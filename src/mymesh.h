@@ -27,6 +27,7 @@ struct controlPara {
 class MyMesh {
 public:
   //可以用>>操作符
+  bool ReadTopoFrom(const std::string &filename);
   bool ReadTopoFromFile(const std::string &filename);
   bool ReadTopoFromVTKFile(const std::string &filename);
   bool WriteGeomToVTKFile(const std::string &filename);

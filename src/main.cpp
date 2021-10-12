@@ -15,12 +15,10 @@ int main(int argc, char **argv) {
   }
 #endif
   MyMesh mesh;
-#ifdef NDEBUG
-  mesh.ReadTopoFromFile(std::string(argv[1]));
-#else
-  mesh.ReadTopoFromVTKFile(std::string(argv[1]));
+
+  auto res = mesh.ReadTopoFrom(std::string(argv[1]));
+  assert(res);
   // mesh.ReadTopoFromFile(filepath + ifilename);
-#endif
   mesh.GenerateOrder();
   mesh.checkTopo();
   for (int i = 0; i < mesh.GetTopoCnum(); ++i) {

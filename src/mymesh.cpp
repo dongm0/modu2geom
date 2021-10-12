@@ -3,6 +3,7 @@
 #include "OVMVtkHexIO.h"
 #include "msqoptimizer.h"
 #include "ovmwrap.h"
+#include <algorithm>
 
 namespace {
 
@@ -66,6 +67,26 @@ untangleBottomFace(const std::vector<untangleData> &uData,
 }
 } // namespace
 
+bool MyMesh::ReadTopoFrom(const std::string &filename) {
+  int dotpos = -1;
+  for (int i = 0; i < filename.size(); ++i) {
+    if (filename.at(filename.size() - 1 - i) == '.') {
+      dotpos = filename.size() - 1 - i;
+      break;
+    }
+  }
+  if (dotpos == -1 || dotpos == 0)
+    return false;
+  auto ext = filename.substr(dotpos);
+  if (ext == ".vtk") {
+    return ReadTopoFromVTKFile(filename);
+  } else if (ext == ".txt") {
+    return ReadTopoFromFile(filename);
+  } else {
+    return false;
+  }
+}
+
 bool MyMesh::ReadTopoFromFile(const std::string &filename) {
   using namespace OpenVolumeMesh;
 
@@ -107,6 +128,10 @@ bool MyMesh::ReadTopoFromFile(const std::string &filename) {
     m_topomesh.add_cell(_cell, false); // false
 #endif
   }
+  m_inner_p0[0] = 0, m_inner_p0[1] = 0, m_inner_p0[2] = 0, m_inner_p1[0] = 1,
+  m_inner_p1[1] = 0, m_inner_p1[2] = 0, m_inner_p2[0] = 1, m_inner_p2[1] = 1,
+  m_inner_p2[2] = 0;
+  m_inner_length = 1;
   return true;
 }
 
@@ -357,6 +382,18 @@ bool MyMesh::AddOneCellCase0(
   geomvertices[1] = m_mesh.add_vertex(m_inner_p1);
   geomvertices[2] = m_mesh.add_vertex(m_inner_p2);
   geomvertices[3] = m_mesh.add_vertex(m_inner_p2 + m_inner_p0 - m_inner_p1);
+
+  auto vertical =
+      (m_inner_p2 - m_inner_p1).cross(m_inner_p0 - m_inner_p1).normalized();
+  geomvertices[4] = m_mesh.add_vertex(m_mesh.vertex(geomvertices[0]) +
+                                      m_inner_length * vertical);
+  geomvertices[5] = m_mesh.add_vertex(m_mesh.vertex(geomvertices[1]) +
+                                      m_inner_length * vertical);
+  geomvertices[6] = m_mesh.add_vertex(m_mesh.vertex(geomvertices[2]) +
+                                      m_inner_length * vertical);
+  geomvertices[7] = m_mesh.add_vertex(m_mesh.vertex(geomvertices[3]) +
+                                      m_inner_length * vertical);
+  /*
   geomvertices[4] = m_mesh.add_vertex(
       m_inner_p0 +
       m_inner_length *
@@ -373,6 +410,7 @@ bool MyMesh::AddOneCellCase0(
       m_inner_p2 + m_inner_p0 - m_inner_p1 +
       m_inner_length *
           (m_inner_p2 + m_inner_p0 - m_inner_p1 - m_inner_p1).normalized());
+          */
   m_tm2m_v_mapping[bottomvec[0]] = geomvertices[0];
   m_tm2m_v_mapping[bottomvec[1]] = geomvertices[1];
   m_tm2m_v_mapping[bottomvec[2]] = geomvertices[2];
@@ -550,8 +588,8 @@ bool MyMesh::AddOneCellCase2(
       // std::cout << fixed.size() << std::endl;
     }
     //变形
-    //{ ArapOperator::Instance().Deformation(m_mesh, fixed); }
-    // WriteGeomToVTKFile("tmp.vtk");
+    { ArapOperator::Instance().Deformation(m_mesh, fixed); }
+    //WriteGeomToVTKFile("tmp.vtk");
   }
   // end
   VertexHandle p0 = getGeomV(wing1[0]), p1 = getGeomV(wing1[3]),
@@ -698,7 +736,7 @@ bool MyMesh::AddOneCellCase3(
       fixed[getGeomV(fan3[2])] =
           new_pos[2][0] + new_pos[0][0] - getCoord_topo(fan1[0]);
     }
-    //{ ArapOperator::Instance().Deformation(m_mesh, fixed); }
+    { ArapOperator::Instance().Deformation(m_mesh, fixed); }
   }
 
   // end
@@ -834,7 +872,7 @@ bool MyMesh::AddOneCellCase4(
       fixed[getGeomV(wing2[2])] = new_pos[1][0];
       fixed[getGeomV(wing2[3])] = new_pos[1][1];
     }
-    //{ ArapOperator::Instance().Deformation(m_mesh, fixed); }
+    { ArapOperator::Instance().Deformation(m_mesh, fixed); }
     std::vector<VertexHandle> tagged;
     for (auto x : fixed) {
       tagged.push_back(x.first);
