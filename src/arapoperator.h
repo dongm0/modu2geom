@@ -1,7 +1,7 @@
 #ifndef ARAPOPERATOR_H
 #define ARAPOPERATOR_H
 
-#include "my_scaf.h"
+//#include "my_scaf.h"
 #include "utils.h"
 
 #include <OpenVolumeMesh/Mesh/HexahedralMesh.hh>

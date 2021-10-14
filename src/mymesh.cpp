@@ -1,8 +1,6 @@
 
 #include "mymesh.h"
-#include "OVMVtkHexIO.h"
-#include "msqoptimizer.h"
-#include "ovmwrap.h"
+#include "ovmwrapper.h"
 #include <algorithm>
 
 namespace {
@@ -589,7 +587,7 @@ bool MyMesh::AddOneCellCase2(
     }
     //变形
     { ArapOperator::Instance().Deformation(m_mesh, fixed); }
-    //WriteGeomToVTKFile("tmp.vtk");
+    // WriteGeomToVTKFile("tmp.vtk");
   }
   // end
   VertexHandle p0 = getGeomV(wing1[0]), p1 = getGeomV(wing1[3]),
@@ -1164,7 +1162,7 @@ bool MyMesh::AddOneCellCase6(
 }
 
 bool MyMesh::Optimize() {
-  /*
+
   auto _h0 = OpenVolumeMesh::VertexHandle(0);
   auto _h1 = OpenVolumeMesh::VertexHandle(1);
   auto _p0 = m_mesh.vertex(_h0);
@@ -1173,7 +1171,7 @@ bool MyMesh::Optimize() {
   // fixed.insert({_h0, _p0});
   // fixed.insert({_h1, _p1});
   ArapOperator::Instance().Optimize(m_mesh, fixed);
-  */
-  MsqOperator::Instance().Optimize_old(m_mesh);
+
+  // MsqOperator::Instance().Optimize_old(m_mesh);
   return true;
 }

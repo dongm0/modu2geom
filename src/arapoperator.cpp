@@ -1,7 +1,8 @@
 #include "arapoperator.h"
-#include "ovmwrap.h"
+#include "myslim.h"
+#include "ovmwrapper.h"
 #include <Eigen/Dense>
-#include <igl/slim.h>
+//#include <igl/slim.h>
 
 void ArapOperator::Deformation(
     OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm,
@@ -14,11 +15,16 @@ void ArapOperator::Deformation(
   VectorXi b;
   transform_hex_to_matrix(V, T, b, bc, surface, _ovm, fixed);
   // printEigenMatrix(bc, std::cout);
+  Eigen::MatrixXi fix_mat(bc.rows(), 3);
+  fix_mat.setZero();
   MatrixXd V0 = V;
-  igl::SLIMData sData;
-  igl::slim_precompute(V, T, V0, sData, igl::SYMMETRIC_DIRICHLET, b, bc, 1e6);
-  igl::slim_solve(sData, 5);
-  transform_matrix_to_hex(sData.V_o, _ovm);
+  SLIMData sData;
+  myslim_precompute(sData, std::move(V), std::move(T), false, std::move(V0),
+                    Eigen::MatrixXd(), igl::MappingEnergyType::EXP_CONFORMAL, b,
+                    bc, fix_mat, 1e6);
+  // myslim_precompute(V, T, V0, sData, igl::SYMMETRIC_DIRICHLET, b, bc, 1e6);
+  myslim_solve(sData, 5);
+  transform_matrix_to_hex(sData.V, _ovm);
   // slim
   /*
   igl::my_scaf::SCAFData sData;
@@ -39,11 +45,19 @@ void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm,
   MatrixXi T, surface;
   VectorXi b;
   transform_hex_to_matrix(V, T, b, bc, surface, _ovm, fixed);
-  igl::my_scaf::SLIMData data;
-  MatrixXd refV;
-  igl::my_scaf::slim_precompute(refV, T, V, surface, data,
-                                igl::MappingEnergyType::SYMMETRIC_DIRICHLET, b,
-                                bc, 1e6);
-  igl::my_scaf::slim_solve(data, 3);
-  transform_matrix_to_hex(data.V_o, _ovm);
+  // printEigenMatrix(bc, std::cout);
+  Eigen::MatrixXd std_ele;
+  std_ele.resize(4, 3);
+  std_ele << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
+  Eigen::MatrixXi fix_mat(bc.rows(), 3);
+  fix_mat.setZero();
+
+  // MatrixXd V0 = V;
+  SLIMData sData;
+  myslim_precompute(sData, std::move(V), std::move(T), true, Eigen::MatrixXd(),
+                    std_ele, igl::MappingEnergyType::EXP_CONFORMAL, b, bc,
+                    fix_mat, 1e6);
+  // myslim_precompute(V, T, V0, sData, igl::SYMMETRIC_DIRICHLET, b, bc, 1e6);
+  myslim_solve(sData, 5);
+  transform_matrix_to_hex(sData.V, _ovm);
 }
