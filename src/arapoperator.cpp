@@ -14,7 +14,6 @@ void ArapOperator::Deformation(
   MatrixXi T, surface;
   VectorXi b;
   transform_hex_to_matrix(V, T, b, bc, surface, _ovm, fixed);
-  // printEigenMatrix(bc, std::cout);
   Eigen::MatrixXi fix_mat(bc.rows(), 3);
   fix_mat.setZero();
   MatrixXd V0 = V;
@@ -22,6 +21,7 @@ void ArapOperator::Deformation(
   myslim_precompute(sData, std::move(V), std::move(T), false, std::move(V0),
                     Eigen::MatrixXd(), igl::MappingEnergyType::EXP_CONFORMAL, b,
                     bc, fix_mat, 1e6);
+
   // myslim_precompute(V, T, V0, sData, igl::SYMMETRIC_DIRICHLET, b, bc, 1e6);
   myslim_solve(sData, 5);
   transform_matrix_to_hex(sData.V, _ovm);
@@ -45,7 +45,6 @@ void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm,
   MatrixXi T, surface;
   VectorXi b;
   transform_hex_to_matrix(V, T, b, bc, surface, _ovm, fixed);
-  // printEigenMatrix(bc, std::cout);
   Eigen::MatrixXd std_ele;
   std_ele.resize(4, 3);
   std_ele << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
@@ -58,6 +57,6 @@ void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm,
                     std_ele, igl::MappingEnergyType::EXP_CONFORMAL, b, bc,
                     fix_mat, 1e6);
   // myslim_precompute(V, T, V0, sData, igl::SYMMETRIC_DIRICHLET, b, bc, 1e6);
-  myslim_solve(sData, 5);
+  myslim_solve(sData, 20);
   transform_matrix_to_hex(sData.V, _ovm);
 }

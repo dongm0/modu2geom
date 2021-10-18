@@ -19,7 +19,6 @@
 
 #include <Eigen/IterativeLinearSolvers>
 #include <Eigen/SparseCholesky>
-
 //#include <igl/sparse_cached.h>
 
 namespace {
@@ -171,7 +170,7 @@ void preCalcRefJacobian(SLIMData &data) {
         Eigen::Matrix3d localRefJ;
         localRefJ.col(0) = _v1;
         localRefJ.col(1) = _v2;
-        localRefJ.col(3) = _v3;
+        localRefJ.col(2) = _v3;
         data.P_ref.block(i * 3, 0, 3, 3) = localRefJ.inverse();
       }
     } else {
@@ -673,7 +672,7 @@ void myslim_precompute(SLIMData &data, Eigen::MatrixXd &&V, Eigen::MatrixXi &&T,
   igl::doublearea(V, T, data.M);
   data.M /= 2.;
   data.mesh_area = data.M.sum();
-  data.exp_factor = 1.8;
+  data.exp_factor = 1.0;
 
   preCalcRefJacobian(data);
   calJacobian(data);
@@ -746,7 +745,8 @@ void myslim_solve(SLIMData &data, int iter_num) {
           e += igl::mapping_energy_with_jacobians(J, data.M, data.slim_energy,
                                                   data.exp_factor);
           for (int i = 0; i < data.b.size(); i++) {
-            Eigen::Vector3d _d = data.bc.row(i) - data.V.row(data.b(i));
+            // Eigen::Vector3d _d = data.bc.row(i) - data.V.row(data.b(i));
+            Eigen::Vector3d _d = data.bc.row(i) - cur.row(data.b(i));
             for (int j = 0; j < 3; ++j) {
               if (data.fixed(i, j) == 1) {
                 _d(j) = 0;
@@ -762,10 +762,10 @@ void myslim_solve(SLIMData &data, int iter_num) {
         igl::flip_avoiding_line_search(data.T, data.V, dest_res, compute_energy,
                                        data.energy * data.mesh_area) /
         data.mesh_area;
-    std::cout << "iter: " << i << " energy: " << data.energy << std::endl;
+    // std::cout << "iter: " << i << " energy: " << data.energy << std::endl;
 
-    if (fabs(old_energy - data.energy) / fabs(data.energy) < 1e-9) {
-      std::cout << "already converge. stop iteration." << std::endl;
+    if (fabs(old_energy - data.energy) / fabs(data.energy) < 1e-6) {
+      // std::cout << "already converge. stop iteration." << std::endl;
       break;
     }
   }

@@ -30,6 +30,6 @@ int main(int argc, char **argv) {
     mesh.WriteGeomToVTKFile(std::to_string(i) + ".vtk");
     std::cout << i << std::endl;
   }
-  mesh.WriteGeomToVTKFileUseTopoMesh(ofilename);
+  mesh.WriteGeomToVTKFileUseTopoMesh("final.vtk");
   return 0;
 }

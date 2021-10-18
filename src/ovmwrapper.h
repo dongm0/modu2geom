@@ -29,15 +29,16 @@ void transform_matrix_to_hex(const Eigen::MatrixXd &V,
 
 void write_matrix_to_vtk_tet(const Eigen::MatrixXd &V, const Eigen::MatrixXi &T,
                              std::ostream &stream);
-
+/*
 template <typename HexMesh>
 void OVMReadHexVtkStream(HexMesh &mesh, std::istream &stream,
                          bool _topologyCheck = true,
                          bool _computeBottomUpIncidences = true);
 
 template <typename HexMesh>
-OVMWriteHexMesh(HexMesh &mesh, std::ofstream &stream);
+void OVMWriteHexMesh(HexMesh &mesh, std::ofstream &stream);
+*/
 
-#include "owmwrapper.impl"
+#include "ovmwrapper.impl"
 
 #endif

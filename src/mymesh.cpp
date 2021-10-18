@@ -112,6 +112,9 @@ bool MyMesh::ReadTopoFromFile(const std::string &filename) {
   }
   fin.close();
   _vnum = m_vids.size();
+  for (size_t i = 0; i < _vnum; ++i) {
+    m_vids[i] = OpenVolumeMesh::VertexHandle(i);
+  }
 
   // add topo cells
   std::vector<VertexHandle> _cell(8);
@@ -287,9 +290,9 @@ bool MyMesh::WriteGeomToVTKFileUseTopoMesh(const std::string &filename) {
   for (uint32_t i = 0; i < m_topomesh.n_cells(); ++i) {
     stream << "12" << std::endl;
   }
-  for (auto x : m_vids) {
-    std::cout << x.first << " " << x.second.idx() << std::endl;
-  }
+  // for (auto x : m_vids) {
+  //  std::cout << x.first << " " << x.second.idx() << std::endl;
+  //}
 }
 
 bool MyMesh::GenerateOneCell(const OpenVolumeMesh::CellHandle &_ch) {
@@ -1168,8 +1171,8 @@ bool MyMesh::Optimize() {
   auto _p0 = m_mesh.vertex(_h0);
   auto _p1 = m_mesh.vertex(_h1);
   std::map<OpenVolumeMesh::VertexHandle, OpenVolumeMesh::Geometry::Vec3d> fixed;
-  // fixed.insert({_h0, _p0});
-  // fixed.insert({_h1, _p1});
+  fixed.insert({_h0, _p0});
+  fixed.insert({_h1, _p1});
   ArapOperator::Instance().Optimize(m_mesh, fixed);
 
   // MsqOperator::Instance().Optimize_old(m_mesh);
