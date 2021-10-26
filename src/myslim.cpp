@@ -672,7 +672,7 @@ void myslim_precompute(SLIMData &data, Eigen::MatrixXd &&V, Eigen::MatrixXi &&T,
   igl::doublearea(V, T, data.M);
   data.M /= 2.;
   data.mesh_area = data.M.sum();
-  data.exp_factor = 1.0;
+  data.exp_factor = 1.5;
 
   preCalcRefJacobian(data);
   calJacobian(data);

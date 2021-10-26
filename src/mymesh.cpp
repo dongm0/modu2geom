@@ -1,6 +1,8 @@
 
 #include "mymesh.h"
+#include "findtoposeq.hpp"
 #include "ovmwrapper.h"
+#include "topology.hpp"
 #include <algorithm>
 
 namespace {
@@ -88,31 +90,21 @@ bool MyMesh::ReadTopoFrom(const std::string &filename) {
 bool MyMesh::ReadTopoFromFile(const std::string &filename) {
   using namespace OpenVolumeMesh;
 
-  std::ifstream fin;
-  fin.open(filename);
-  if (fin.fail()) {
-    return false;
-  }
+  Topology topo(filename);
+  auto topo1 = modifyTopoSeq(topo);
 
-  uint32_t _cnum = 0;
-  uint32_t _vnum = 0;
-  int _tmp;
-  fin >> _tmp;
-  _cnum = _tmp;
+  uint32_t _cnum = topo1.c_size;
+  uint32_t _vnum = topo1.v_size;
   m_cells.resize(_cnum);
+  for (int i = 0; i < _vnum; ++i) {
+    m_topomesh.add_vertex();
+  }
   for (uint32_t i = 0; i < _cnum; ++i) {
     for (uint32_t j = 0; j < 8; ++j) {
-      fin >> _tmp;
-      m_cells[i][j] = _tmp;
-      if (m_vids.count(_tmp) == 0) {
-        auto vid = m_topomesh.add_vertex();
-        m_vids[_tmp] = vid;
-      }
+      m_cells[i][j] = topo1.data[i][j];
     }
   }
-  fin.close();
-  _vnum = m_vids.size();
-  for (size_t i = 0; i < _vnum; ++i) {
+  for (int i = 0; i < _vnum; ++i) {
     m_vids[i] = OpenVolumeMesh::VertexHandle(i);
   }
 
