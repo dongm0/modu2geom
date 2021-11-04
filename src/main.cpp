@@ -18,16 +18,12 @@ int main(int argc, char **argv) {
 
   auto res = mesh.ReadTopoFrom(std::string(argv[1]));
   assert(res);
-  // mesh.ReadTopoFromFile(filepath + ifilename);
   mesh.GenerateOrder();
   mesh.checkTopo();
   for (int i = 0; i < mesh.GetTopoCnum(); ++i) {
-    if (i >= 30) {
-      int _tmpppp = 0;
-    }
     mesh.GenerateOneCell(mesh.GetCurrentCellHandle());
     mesh.Optimize();
-    mesh.WriteGeomToVTKFile(std::to_string(i) + ".vtk");
+    mesh.WriteGeomToVTKFileUseTopoMesh(std::to_string(i) + ".vtk");
     std::cout << i << std::endl;
   }
   mesh.WriteGeomToVTKFileUseTopoMesh("final.vtk");

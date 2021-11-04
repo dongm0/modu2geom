@@ -14,10 +14,12 @@ public:
   }
   void Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm,
                 std::map<OpenVolumeMesh::VertexHandle,
-                         OpenVolumeMesh::Geometry::Vec3d> &fixed);
+                         OpenVolumeMesh::Geometry::Vec3d> &fixed,
+                int iter_time = 5);
   void Deformation(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm,
                    std::map<OpenVolumeMesh::VertexHandle,
-                            OpenVolumeMesh::Geometry::Vec3d> &fixed);
+                            OpenVolumeMesh::Geometry::Vec3d> &fixed,
+                   int iter_time = 5);
 
 private:
   ArapOperator() {}

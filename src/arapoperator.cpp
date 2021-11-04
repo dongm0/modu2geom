@@ -4,10 +4,10 @@
 #include <Eigen/Dense>
 //#include <igl/slim.h>
 
-void ArapOperator::Deformation(
-    OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm,
-    std::map<OpenVolumeMesh::VertexHandle, OpenVolumeMesh::Geometry::Vec3d>
-        &fixed) {
+void ArapOperator::Deformation(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm,
+                               std::map<OpenVolumeMesh::VertexHandle,
+                                        OpenVolumeMesh::Geometry::Vec3d> &fixed,
+                               int iter_time) {
   using namespace Eigen;
   using namespace OpenVolumeMesh;
   MatrixXd V, bc;
@@ -23,7 +23,7 @@ void ArapOperator::Deformation(
                     bc, fix_mat, 1e6);
 
   // myslim_precompute(V, T, V0, sData, igl::SYMMETRIC_DIRICHLET, b, bc, 1e6);
-  myslim_solve(sData, 5);
+  myslim_solve(sData, iter_time);
   transform_matrix_to_hex(sData.V, _ovm);
   // slim
   /*
@@ -38,7 +38,8 @@ void ArapOperator::Deformation(
 
 void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm,
                             std::map<OpenVolumeMesh::VertexHandle,
-                                     OpenVolumeMesh::Geometry::Vec3d> &fixed) {
+                                     OpenVolumeMesh::Geometry::Vec3d> &fixed,
+                            int iter_time) {
   using namespace Eigen;
   using namespace OpenVolumeMesh;
   MatrixXd V, bc;
@@ -57,6 +58,6 @@ void ArapOperator::Optimize(OpenVolumeMesh::GeometricHexahedralMeshV3d &_ovm,
                     std_ele, igl::MappingEnergyType::EXP_CONFORMAL, b, bc,
                     fix_mat, 1e6);
   // myslim_precompute(V, T, V0, sData, igl::SYMMETRIC_DIRICHLET, b, bc, 1e6);
-  myslim_solve(sData, 20);
+  myslim_solve(sData, iter_time);
   transform_matrix_to_hex(sData.V, _ovm);
 }

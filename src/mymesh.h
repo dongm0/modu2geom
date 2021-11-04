@@ -37,7 +37,7 @@ public:
   bool GenerateOrder();
   bool GenerateOneCell(const OpenVolumeMesh::CellHandle &_ch);
 
-  bool Optimize();
+  bool Optimize(int iter_time = 5);
 
   int GetTopoVnum() { return m_topomesh.n_vertices(); }
   int GetTopoCnum() { return m_topomesh.n_cells(); }

@@ -6,7 +6,6 @@
 #include <algorithm>
 
 namespace {
-
 static OpenVolumeMesh::Vec3d
 projectVectoDirection(const OpenVolumeMesh::Vec3d &v,
                       const OpenVolumeMesh::Vec3d &ref) {
@@ -19,10 +18,26 @@ projectVectoPlane(const OpenVolumeMesh::Vec3d &v,
                   const OpenVolumeMesh::Vec3d &ref) {
   return v - projectVectoDirection(v, ref);
 }
+static OpenVolumeMesh::Vec3d
+projectPointtoDirection(const OpenVolumeMesh::Vec3d &p,
+                        const OpenVolumeMesh::Vec3d &refp,
+                        const OpenVolumeMesh::Vec3d &ref) {
+  auto v = p - refp;
+  auto ref_norm = ref.normalized();
+  return ref_norm * (v | ref_norm) + refp;
+}
+
+static OpenVolumeMesh::Vec3d
+projectPointtoPlane(const OpenVolumeMesh::Vec3d &p,
+                    const OpenVolumeMesh::Vec3d &refp,
+                    const OpenVolumeMesh::Vec3d &ref) {
+  auto v = p - refp;
+  return v - projectVectoDirection(v, ref) + refp;
+}
 
 static inline std::vector<std::vector<OpenVolumeMesh::Vec3d>>
 untangleBottomFace(const std::vector<untangleData> &uData,
-                   double minangle = 9) {
+                   double minangle = 20) {
   using namespace OpenVolumeMesh;
   const double my_pi = atan(1) * 4;
 
@@ -266,25 +281,27 @@ bool MyMesh::WriteGeomToVTKFileUseTopoMesh(const std::string &filename) {
          << std::endl;
   stream << "POINTS " << m_topomesh.n_vertices() << " double" << std::endl;
   for (auto &v : m_topomesh.vertices()) {
+    if (m_tm2m_v_mapping.count(v) == 0 || !m_tm2m_v_mapping[v].is_valid()) {
+      stream << "0 0 0 " << std::endl;
+      continue;
+    }
     auto p = m_mesh.vertex(m_tm2m_v_mapping[v]);
     stream << p[0] << " " << p[1] << " " << p[2] << std::endl;
   }
-  stream << "CELLS " << m_topomesh.n_cells() << " " << 9 * m_topomesh.n_cells()
+  stream << "CELLS " << m_mesh.n_cells() << " " << 9 * m_mesh.n_cells()
          << std::endl;
-  for (int i = 0; i < m_topomesh.n_cells(); ++i) {
+  for (int i = 0; i < m_mesh.n_cells(); ++i) {
     stream << "8 ";
     for (int j = 0; j < 8; ++j) {
       stream << m_vids.at(m_cells[i][j]).idx() << " ";
     }
     stream << std::endl;
   }
-  stream << "CELL_TYPES " << m_topomesh.n_cells() << std::endl;
-  for (uint32_t i = 0; i < m_topomesh.n_cells(); ++i) {
+  stream << "CELL_TYPES " << m_mesh.n_cells() << std::endl;
+  for (uint32_t i = 0; i < m_mesh.n_cells(); ++i) {
     stream << "12" << std::endl;
   }
-  // for (auto x : m_vids) {
-  //  std::cout << x.first << " " << x.second.idx() << std::endl;
-  //}
+  return true;
 }
 
 bool MyMesh::GenerateOneCell(const OpenVolumeMesh::CellHandle &_ch) {
@@ -582,7 +599,7 @@ bool MyMesh::AddOneCellCase2(
     }
     //变形
     { ArapOperator::Instance().Deformation(m_mesh, fixed); }
-    // WriteGeomToVTKFile("tmp.vtk");
+    // WriteGeomToVTKFileUseTopoMesh("tmp.vtk");
   }
   // end
   VertexHandle p0 = getGeomV(wing1[0]), p1 = getGeomV(wing1[3]),
@@ -590,16 +607,16 @@ bool MyMesh::AddOneCellCase2(
   VertexHandle p3 = getGeomV(wing2[0]), p4 = getGeomV(wing2[3]),
                p5 = getGeomV(wing1[2]);
   auto s1_mid = m_mesh.vertex(p1) + m_mesh.vertex(p2) - 2 * m_mesh.vertex(p0);
-  s1_mid = projectVectoPlane(s1_mid, m_mesh.vertex(p0) - m_mesh.vertex(p3));
-  s1_mid = s1_mid.normalized() * m_inner_length * sqrt(2);
+  // s1_mid = projectVectoPlane(s1_mid, m_mesh.vertex(p0) - m_mesh.vertex(p3));
+  // s1_mid = s1_mid.normalized() * m_inner_length * sqrt(2);
   s1_mid += m_mesh.vertex(p0);
   auto geoms1 = m_mesh.add_vertex(s1_mid);
   m_tm2m_v_mapping[s1] = geoms1;
   m_m2tm_v_mapping[geoms1] = s1;
   // m_mesh.set_vertex(getGeomV(s1), s1_mid);
   auto s2_mid = m_mesh.vertex(p4) + m_mesh.vertex(p5) - 2 * m_mesh.vertex(p3);
-  s2_mid = projectVectoPlane(s2_mid, m_mesh.vertex(p0) - m_mesh.vertex(p3));
-  s2_mid = s2_mid.normalized() * m_inner_length * sqrt(2);
+  // s2_mid = projectVectoPlane(s2_mid, m_mesh.vertex(p0) - m_mesh.vertex(p3));
+  // s2_mid = s2_mid.normalized() * m_inner_length * sqrt(2);
   s2_mid += m_mesh.vertex(p3);
   auto geoms2 = m_mesh.add_vertex(s2_mid);
   m_tm2m_v_mapping[s2] = geoms2;
@@ -830,7 +847,8 @@ bool MyMesh::AddOneCellCase4(
   {
     //解扭之前的准备
     Vec3d normdir, wing1dir, wing2dir, bottoml1,
-        bottoml2; //估计的法向量，以及两边正交的方向
+        bottoml2;        //估计的法向量，以及两边正交的方向
+    Vec3d cent(0, 0, 0); // center of center face;
     {
       Vec3d v1 = getCoord_topo(bottom_vec[1]) - getCoord_topo(bottom_vec[0]);
       Vec3d v2 = getCoord_topo(bottom_vec[2]) - getCoord_topo(bottom_vec[1]);
@@ -840,6 +858,10 @@ bool MyMesh::AddOneCellCase4(
 
       bottoml1 = v1, bottoml2 = v3;
       wing1dir = bottoml1 % normdir, wing2dir = bottoml2 % normdir;
+      std::for_each(
+          bottom_vec.begin(), bottom_vec.end(),
+          [&](OpenVolumeMesh::VertexHandle &vh) { cent += getCoord_topo(vh); });
+      cent /= 4;
     }
     //底面解扭
     std::map<VertexHandle, Vec3d> fixed;
@@ -856,12 +878,16 @@ bool MyMesh::AddOneCellCase4(
                   getCoord_topo(wing2[0]),
                   {getCoord_topo(wing2[2]), getCoord_topo(wing2[3])}};
       auto new_pos = untangleBottomFace(uData);
-      fixed[getGeomV(wing1[0])] = getCoord_topo(wing1[0]);
-      fixed[getGeomV(wing1[1])] = getCoord_topo(wing1[1]);
+      fixed[getGeomV(wing1[0])] =
+          projectPointtoPlane(getCoord_topo(wing1[0]), cent, normdir);
+      fixed[getGeomV(wing1[1])] =
+          projectPointtoPlane(getCoord_topo(wing1[1]), cent, normdir);
       fixed[getGeomV(wing1[2])] = new_pos[0][0];
       fixed[getGeomV(wing1[3])] = new_pos[0][1];
-      fixed[getGeomV(wing2[0])] = getCoord_topo(wing2[0]);
-      fixed[getGeomV(wing2[1])] = getCoord_topo(wing2[1]);
+      fixed[getGeomV(wing2[0])] =
+          projectPointtoPlane(getCoord_topo(wing2[0]), cent, normdir);
+      fixed[getGeomV(wing2[1])] =
+          projectPointtoPlane(getCoord_topo(wing2[1]), cent, normdir);
       fixed[getGeomV(wing2[2])] = new_pos[1][0];
       fixed[getGeomV(wing2[3])] = new_pos[1][1];
     }
@@ -1122,11 +1148,13 @@ bool MyMesh::AddOneCellCase6(
                   getCoord_topo(wings[2][0]),
                   {getCoord_topo(wings[2][2]), getCoord_topo(wings[2][3])}};
       std::vector<std::vector<OpenVolumeMesh::Vec3d>> new_pos;
-      if (_ch.idx() > 28) {
-        new_pos = untangleBottomFace(uData, 2);
-      } else {
-        new_pos = untangleBottomFace(uData);
-      }
+      // weird logic, I dont remember the usage, so just annotate it
+      // if (_ch.idx() > 28) {
+      //  new_pos = untangleBottomFace(uData, 2);
+      //} else {
+      //  new_pos = untangleBottomFace(uData);
+      //}
+      new_pos = untangleBottomFace(uData);
       fixed[getGeomV(wings[0][0])] = getCoord_topo(wings[0][0]);
       fixed[getGeomV(wings[0][1])] = getCoord_topo(wings[0][1]);
       fixed[getGeomV(wings[0][2])] = new_pos[0][0];
@@ -1156,7 +1184,7 @@ bool MyMesh::AddOneCellCase6(
   return true;
 }
 
-bool MyMesh::Optimize() {
+bool MyMesh::Optimize(int iter_time) {
 
   auto _h0 = OpenVolumeMesh::VertexHandle(0);
   auto _h1 = OpenVolumeMesh::VertexHandle(1);

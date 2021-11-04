@@ -269,11 +269,18 @@ Topology justifySeq(const Topology &topo) {
 
 Topology modifyTopoSeq(const Topology &topo) {
   auto mesh = topo.ToOVM();
-  auto topo1(topo);
-  topo1.FromOVM(mesh);
   auto toposeq = FindTopoSeqPrivate::findTopoSeq(mesh);
-  auto topo_mid = Topology(mesh, toposeq);
+  Topology topo_mid;
+  {
+    topo_mid.c_size = topo.c_size;
+    topo_mid.v_size = topo.v_size;
+    for (int i = 0; i < toposeq.size(); ++i) {
+      topo_mid.data.push_back(topo.data[toposeq[i].idx()]);
+    }
+  }
   return FindTopoSeqPrivate::justifySeq(topo_mid);
+  // auto &ret = FindTopoSeqPrivate::justifySeq(topo_mid);
+  // return *ret;
 }
 
 /*

@@ -672,7 +672,7 @@ void myslim_precompute(SLIMData &data, Eigen::MatrixXd &&V, Eigen::MatrixXi &&T,
   igl::doublearea(V, T, data.M);
   data.M /= 2.;
   data.mesh_area = data.M.sum();
-  data.exp_factor = 1.5;
+  data.exp_factor = 1.2;
 
   preCalcRefJacobian(data);
   calJacobian(data);
@@ -762,10 +762,8 @@ void myslim_solve(SLIMData &data, int iter_num) {
         igl::flip_avoiding_line_search(data.T, data.V, dest_res, compute_energy,
                                        data.energy * data.mesh_area) /
         data.mesh_area;
-    // std::cout << "iter: " << i << " energy: " << data.energy << std::endl;
 
     if (fabs(old_energy - data.energy) / fabs(data.energy) < 1e-6) {
-      // std::cout << "already converge. stop iteration." << std::endl;
       break;
     }
   }

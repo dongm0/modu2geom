@@ -32,37 +32,34 @@ struct Topology {
     }
     return mesh;
   }
-  void FromOVM(const OVM &ovm) {
-    data.clear();
-    data.resize(c_size);
-    int c = 0;
-    for (auto cit : ovm.cells()) {
-      for (auto vit : ovm.cell_vertices(cit)) {
-        data[c].push_back(vit.idx());
-      }
-      std::swap(data[c][1], data[c][3]);
-      ++c;
-    }
-  }
 
+  Topology() {}
   Topology(const std::string &filename) {
     std::ifstream fin;
     fin.open(filename);
     fin >> *this;
   }
-  Topology(const OVM &ovm,
-           const std::vector<OpenVolumeMesh::CellHandle> &toposeq)
-      : c_size(ovm.n_cells()), v_size(ovm.n_vertices()) {
-    data.resize(c_size);
-    int c = 0;
-    for (auto cit : toposeq) {
-      for (auto vit : ovm.cell_vertices(cit)) {
-        data[c].push_back(vit.idx());
-      }
-      std::swap(data[c][1], data[c][3]);
-      ++c;
-    }
-  }
+  // Topology(const OVM &ovm,
+  //         const std::vector<OpenVolumeMesh::CellHandle> &toposeq)
+  //    : c_size(ovm.n_cells()), v_size(ovm.n_vertices()) {
+  //  data.resize(c_size);
+  //  int c = 0;
+  //  for (auto cit : ovm.cells()) {
+  //    auto xf_face = ovm.get_oriented_halfface(0, cit);
+  //    auto [xf_begin, xf_end] = ovm.halfface_vertices(xf_face);
+  //    std::vector<OpenVolumeMesh::VertexHandle> xf(xf_begin, xf_end);
+  //    auto xb = opposite_vertex_in_cell(ovm, cit, xf_face, xf);
+  //    std::for_each(xf.begin(), xf.end(), [&](OpenVolumeMesh::VertexHandle vh)
+  //    {
+  //      data[c].push_back(vh.idx());
+  //    });
+  //    std::for_each(xb.begin(), xb.end(), [&](OpenVolumeMesh::VertexHandle vh)
+  //    {
+  //      data[c].push_back(vh.idx());
+  //    });
+  //    ++c;
+  //  }
+  //}
 
   friend std::istream &operator>>(std::istream &in, Topology &A);
   friend std::ostream &operator<<(std::ostream &out, const Topology &A);
